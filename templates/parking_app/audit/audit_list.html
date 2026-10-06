@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Journal d'Audit & Traçabilité des Actions{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+        <h3 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-shield-halved text-primary me-2"></i>Journal d'Audit & Traçabilité (Audit Trail)
+        </h3>
+        <p class="text-muted small mb-0">
+            Historique chronologique détaillant : <strong>qui</strong> a fait <strong>quoi</strong>, sur <strong>quel élément</strong>, à <strong>quelle date/heure</strong> et depuis <strong>quelle IP</strong>.
+        </p>
+    </div>
+    <span class="badge bg-primary fs-6 px-3 py-2 shadow-sm">
+        {{ total_logs }} actions enregistrées
+    </span>
+</div>
+
+<!-- Filtres de recherche d'audit -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-bold text-secondary">
+            <i class="fa-solid fa-filter text-primary me-2"></i>Filtrer les Journaux d'Activité
+        </h6>
+    </div>
+    <div class="card-body p-3">
+        <form method="get" class="row g-2">
+            <div class="col-md-3">
+                <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Recherche par texte, élément, IP...">
+            </div>
+            <div class="col-md-2">
+                <select name="action" class="form-select">
+                    <option value="">Toutes les actions</option>
+                    {% for code, label in actions %}
+                    <option value="{{ code }}" {% if selected_action == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="user" class="form-select">
+                    <option value="">Tous les utilisateurs</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}" {% if selected_user == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }} ({{ u.get_role_display }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="date" value="{{ selected_date }}" class="form-control" title="Filtrer par date">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fa-solid fa-magnifying-glass"></i> Filtrer
+                </button>
+                <a href="{% url 'audit_log_list' %}" class="btn btn-outline-secondary" title="Réinitialiser">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tableau du Journal d'Audit -->
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 170px;">Date & Heure</th>
+                    <th>Acteur / Utilisateur</th>
+                    <th>Type d'Action</th>
+                    <th>Élément Concerné</th>
+                    <th>Détails de l'Opération</th>
+                    <th style="width: 120px;">Adresse IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in page_obj %}
+                <tr>
+                    <td class="small fw-semibold text-secondary">
+                        <div>{{ log.timestamp|date:"d/m/Y" }}</div>
+                        <div class="text-primary font-monospace">{{ log.timestamp|time:"H:i:s" }}</div>
+                    </td>
+                    <td>
+                        {% if log.user %}
+                            <div class="fw-bold">{{ log.user.username }}</div>
+                            <span class="badge {{ log.user.get_role_badge_class }}" style="font-size: 0.68rem;">
+                                {{ log.user.get_role_display }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted fst-italic">Système / Anonyme</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {{ log.get_action_badge_class }}">
+                            {{ log.get_action_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-dark">{{ log.target_repr|default:log.target_model }}</div>
+                        <div class="small text-muted font-monospace" style="font-size: 0.72rem;">{{ log.target_model }}</div>
+                    </td>
+                    <td class="small text-secondary">
+                        {{ log.details|default:"-" }}
+                    </td>
+                    <td class="small font-monospace text-muted">
+                        {{ log.ip_address|default:"127.0.0.1" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-shield-halved fa-3x mb-3 text-secondary opacity-50 d-block"></i>
+                        Aucune entrée dans le journal d'audit correspondant aux filtres.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+        <div class="small text-muted">
+            Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+        </div>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_date %}&date={{ selected_date }}{% endif %}">
+                        <i class="fa-solid fa-chevron-left"></i> Précédent
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">{{ page_obj.number }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_date %}&date={{ selected_date }}{% endif %}">
+                        Suivant <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Enregistrer une Entrée Véhicule{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fa-solid fa-circle-plus me-2"></i>Enregistrement de l'Entrée d'un Véhicule
+                    </h5>
+                    <span class="badge bg-warning text-dark fw-bold">Ville de Bujumbura</span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-4">
+                    Saisissez le numéro d'immatriculation et sélectionnez la zone et la catégorie du véhicule pour générer le ticket de stationnement.
+                </p>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Immatriculation -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark fs-6">
+                            <i class="fa-solid fa-car-rear text-primary me-2"></i>Plaque d'Immatriculation
+                        </label>
+                        {{ form.plate_number }}
+                        <div class="form-text small">
+                            Exemples de plaques : <strong>RA 4512 B</strong>, <strong>IT 3214 A</strong>, <strong>D 9845 A</strong>, <strong>C 1278 B</strong>
+                        </div>
+                        {% if form.plate_number.errors %}
+                        <div class="text-danger small mt-1 fw-semibold">
+                            {{ form.plate_number.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <!-- Type de Véhicule -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">
+                                <i class="fa-solid fa-list-check text-primary me-2"></i>Catégorie de Véhicule
+                            </label>
+                            {{ form.vehicle_type }}
+                            {% if form.vehicle_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.vehicle_type.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Zone de Parking -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">
+                                <i class="fa-solid fa-map-pin text-primary me-2"></i>Zone de Stationnement
+                            </label>
+                            {{ form.zone }}
+                            {% if form.zone.errors %}
+                            <div class="text-danger small mt-1">{{ form.zone.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Carte récapitulative des places par zone en temps réel -->
+                    <div class="bg-light p-3 rounded-3 border mb-4">
+                        <div class="small fw-bold text-secondary mb-2">
+                            <i class="fa-solid fa-chart-pie text-success me-1"></i> Disponibilité des places par zone en temps réel :
+                        </div>
+                        <div class="row g-2">
+                            {% for z in zones %}
+                            <div class="col-sm-6 col-md-4">
+                                <div class="p-2 border rounded bg-white small">
+                                    <div class="fw-semibold text-truncate">{{ z.name }}</div>
+                                    <div class="d-flex justify-content-between text-muted" style="font-size: 0.78rem;">
+                                        <span>Libres : <strong class="text-success">{{ z.get_available_spots }}</strong></span>
+                                        <span>Total : {{ z.total_spots }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'ticket_list' %}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Annuler & Retour
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm px-4">
+                            <i class="fa-solid fa-check me-2"></i> Générer le Ticket d'Entrée
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

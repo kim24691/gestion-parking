@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Centre des Rapports & Statistiques - Bujumbura{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+        <h3 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-chart-pie text-primary me-2"></i>Rapports & Bilans Statistiques
+        </h3>
+        <p class="text-muted small mb-0">
+            Édition et génération de rapports imprimables et téléchargeables en PDF pour la Mairie de Bujumbura
+        </p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- 1. Rapport Financier -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 border-start border-success border-4">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="stat-icon bg-success bg-opacity-10 text-success mb-3" style="width: 54px; height: 54px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Rapport Financier des Recettes</h5>
+                <p class="text-secondary small flex-grow-1">
+                    Bilan complet des recettes perçues en <strong>Franc Burundi (BIF)</strong>, ventilé par zone de stationnement, par catégorie de véhicule et par mode de paiement (Cash, Lumicash, EcoCash).
+                </p>
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{% url 'report_financial' %}" class="btn btn-success fw-semibold">
+                        <i class="fa-solid fa-eye me-1"></i> Consulter le Rapport Web
+                    </a>
+                    <a href="{% url 'report_financial' %}?export=pdf" class="btn btn-outline-danger btn-sm">
+                        <i class="fa-solid fa-file-pdf me-1"></i> Télécharger en PDF Officiel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Bilan des Flux Entrées / Sorties -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 border-start border-primary border-4">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary mb-3" style="width: 54px; height: 54px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+                    <i class="fa-solid fa-arrows-left-right"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Bilan des Entrées & Sorties</h5>
+                <p class="text-secondary small flex-grow-1">
+                    Analyse des volumes de trafic des véhicules par jour et par semaine, taux de rotation des places et comparatif quotidien.
+                </p>
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{% url 'report_daily_traffic' %}" class="btn btn-primary fw-semibold">
+                        <i class="fa-solid fa-chart-line me-1"></i> Consulter le Bilan de Trafic
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Liste des Infractions & Dépassements -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 border-start border-danger border-4">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger mb-3" style="width: 54px; height: 54px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Infractions & Dépassements</h5>
+                <p class="text-secondary small flex-grow-1">
+                    Identification des véhicules stationnés au-delà du temps réglementaire autorisé (> 8h), véhicules en séjour prolongé et calcul des pénalités dues en BIF.
+                </p>
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{% url 'report_violations' %}" class="btn btn-danger fw-semibold">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Voir les Véhicules en Infraction
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

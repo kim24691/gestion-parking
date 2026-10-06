@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Sortie & Encaissement - Ticket #{{ ticket.ticket_number }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fa-solid fa-cash-register me-2"></i>Clôture de Stationnement & Encaissement
+                    </h5>
+                    <span class="badge bg-white text-success fw-bold fs-6">
+                        Plaque : {{ ticket.plate_number }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <!-- Récapitulatif du stationnement -->
+                <div class="row g-3 p-3 bg-light rounded-3 border mb-4">
+                    <div class="col-md-4">
+                        <div class="text-muted small">Numéro de Ticket</div>
+                        <div class="fw-bold text-primary fs-6">#{{ ticket.ticket_number }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Zone de Parking</div>
+                        <div class="fw-bold">{{ ticket.zone.name }} ({{ ticket.zone.code }})</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Catégorie</div>
+                        <div class="fw-bold">{{ ticket.vehicle_type.name }}</div>
+                    </div>
+
+                    <div class="col-md-4 border-top pt-2">
+                        <div class="text-muted small">Heure d'Entrée</div>
+                        <div class="fw-semibold">{{ ticket.entry_time|date:"d/m/Y H:i" }}</div>
+                    </div>
+                    <div class="col-md-4 border-top pt-2">
+                        <div class="text-muted small">Heure de Sortie (Actuelle)</div>
+                        <div class="fw-semibold text-primary">{% now "d/m/Y H:i" %}</div>
+                    </div>
+                    <div class="col-md-4 border-top pt-2">
+                        <div class="text-muted small">Durée Écoulée</div>
+                        <div class="fw-bold text-dark fs-6">{{ duration_str }}</div>
+                    </div>
+                </div>
+
+                <!-- Montant Calculé Automatiquement en BIF -->
+                <div class="card border-success border-2 bg-success bg-opacity-10 mb-4 p-3 text-center">
+                    <div class="text-secondary small fw-semibold text-uppercase">Montant Dû Calculé Automatiquement</div>
+                    <div class="display-5 fw-bold text-success my-1">
+                        {{ amount_due|floatformat:0 }} <span class="fs-4">BIF</span>
+                    </div>
+                    <div class="small text-muted">
+                        Tarif horaire appliqué : {{ ticket.vehicle_type.default_hourly_rate|floatformat:0 }} BIF/heure
+                        {% if amount_due == 0 %}
+                        &bull; <span class="badge bg-info text-dark">Gratuit (Période de grâce de 15 minutes)</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Formulaire d'encaissement -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">
+                                <i class="fa-solid fa-credit-card me-1 text-primary"></i> Mode de Règlement
+                            </label>
+                            {{ form.payment_method }}
+                            {% if form.payment_method.errors %}
+                            <div class="text-danger small mt-1">{{ form.payment_method.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary">
+                                <i class="fa-solid fa-coins me-1 text-success"></i> Montant Perçu (BIF)
+                            </label>
+                            {{ form.amount_paid }}
+                            {% if form.amount_paid.errors %}
+                            <div class="text-danger small mt-1">{{ form.amount_paid.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-secondary small">
+                                <i class="fa-solid fa-mobile-screen me-1 text-primary"></i> Référence Transaction Mobile Money (Lumicash / EcoCash)
+                            </label>
+                            {{ form.payment_reference }}
+                            <div class="form-text small">Indiquez le code de transaction SMS en cas de paiement mobile par le conducteur.</div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'ticket_detail' ticket.pk %}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Retour aux Détails
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg fw-bold shadow px-4">
+                            <i class="fa-solid fa-circle-check me-2"></i> Encaisser & Libérer la Place
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

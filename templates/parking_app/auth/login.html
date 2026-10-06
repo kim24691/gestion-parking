@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Gestion Parking Public Bujumbura</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #047857 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .login-card {
+            max-width: 460px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <!-- En-tête Institutionnel -->
+        <div class="bg-primary text-white p-4 text-center">
+            <div class="mb-2">
+                <i class="fa-solid fa-square-parking fa-3x text-warning"></i>
+            </div>
+            <h4 class="fw-bold mb-1">RÉGIE DES PARKINGS</h4>
+            <div class="small text-light opacity-90">Mairie de Bujumbura &bull; Burundi</div>
+            <div class="badge bg-warning text-dark mt-2 px-3 py-1 fw-semibold">
+                BIU &bull; Faculté de Génie Logiciel
+            </div>
+        </div>
+
+        <div class="p-4">
+            <!-- Messages d'alerte -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show py-2 small" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <h5 class="fw-bold text-secondary mb-3">Authentification Sécurisée</h5>
+            <p class="text-muted small mb-4">Accès réservé aux administrateurs municipaux et agents contrôleurs de stationnement.</p>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-secondary">
+                        <i class="fa-solid fa-user me-1 text-primary"></i> Identifiant ou Matricule
+                    </label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="text-danger small mt-1">{{ form.username.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold small text-secondary">
+                        <i class="fa-solid fa-lock me-1 text-primary"></i> Mot de passe
+                    </label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                        <div class="text-danger small mt-1">{{ form.password.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fs-6 fw-bold shadow-sm">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> Se Connecter
+                </button>
+            </form>
+
+            <!-- Guide des comptes pour la soutenance / test -->
+            <div class="mt-4 p-3 bg-light rounded-3 border">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fa-solid fa-circle-info text-primary"></i>
+                    <span class="fw-bold small text-dark">Comptes de Démonstration (BIU) :</span>
+                </div>
+                <div class="small text-muted">
+                    <div class="d-flex justify-content-between py-1 border-bottom">
+                        <span><i class="fa-solid fa-user-shield text-danger me-1"></i> Admin : <strong>admin</strong></span>
+                        <span class="badge bg-secondary">admin123</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom">
+                        <span><i class="fa-solid fa-user-check text-primary me-1"></i> Agent Rohero : <strong>agent_rohero</strong></span>
+                        <span class="badge bg-secondary">agent123</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span><i class="fa-solid fa-user-check text-primary me-1"></i> Agent Centre : <strong>agent_centre</strong></span>
+                        <span class="badge bg-secondary">agent123</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

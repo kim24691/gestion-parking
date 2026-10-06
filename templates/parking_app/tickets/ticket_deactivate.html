@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Désactiver Ticket #{{ ticket.ticket_number }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-warning text-dark py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fa-solid fa-ban me-2"></i>Désactivation / Annulation Logique d'un Ticket
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-light border mb-4">
+                    <div class="fw-bold fs-6">Ticket N° {{ ticket.ticket_number }}</div>
+                    <div>Véhicule : <strong class="badge bg-dark font-monospace">{{ ticket.plate_number }}</strong></div>
+                    <div>Zone : <strong>{{ ticket.zone.name }}</strong> | Entrée : {{ ticket.entry_time|date:"d/m/Y H:i" }}</div>
+                </div>
+
+                <p class="text-secondary small mb-3">
+                    La désactivation logique permet d'annuler le ticket en conservant l'enregistrement et en libérant la place, avec une traçabilité obligatoire dans le journal d'audit.
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-secondary">
+                            Motif Obligatoire de Désactivation / Annulation
+                        </label>
+                        {{ form.cancellation_reason }}
+                        {% if form.cancellation_reason.errors %}
+                        <div class="text-danger small mt-1">{{ form.cancellation_reason.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'ticket_detail' ticket.pk %}" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-warning fw-bold px-4">
+                            <i class="fa-solid fa-check me-1"></i> Confirmer la Désactivation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

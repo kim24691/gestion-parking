@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Véhicules en Infraction & Dépassement - Bujumbura{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 no-print">
+    <div>
+        <h3 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Véhicules en Dépassement de Temps & Infractions
+        </h3>
+        <p class="text-muted small mb-0">
+            Contrôle des véhicules stationnés au-delà du seuil réglementaire dans les zones municipales de Bujumbura
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-danger shadow-sm">
+            <i class="fa-solid fa-print me-1"></i> Imprimer la Liste
+        </button>
+        <a href="{% url 'reports_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Retour aux Rapports
+        </a>
+    </div>
+</div>
+
+<!-- Filtre par seuil d'heures -->
+<div class="card shadow-sm border-0 mb-4 no-print">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold text-secondary mb-1">
+                    Seuil de Dépassement Minimum
+                </label>
+                <select name="hours" class="form-select">
+                    <option value="4" {% if threshold_hours == 4 %}selected{% endif %}>Plus de 4 heures de stationnement</option>
+                    <option value="6" {% if threshold_hours == 6 %}selected{% endif %}>Plus de 6 heures de stationnement</option>
+                    <option value="8" {% if threshold_hours == 8 %}selected{% endif %}>Plus de 8 heures de stationnement (Réglementaire Mairie)</option>
+                    <option value="12" {% if threshold_hours == 12 %}selected{% endif %}>Plus de 12 heures (Stationnement prolongé / Nuit)</option>
+                    <option value="24" {% if threshold_hours == 24 %}selected{% endif %}>Plus de 24 heures (Abandon potentiel)</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fa-solid fa-filter me-1"></i> Appliquer le Seuil
+                </button>
+            </div>
+            <div class="col-md-3 text-end">
+                <span class="badge bg-danger fs-6 px-3 py-2">
+                    {{ count }} véhicule(s) en infraction
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- En-tête visible à l'impression -->
+<div class="d-none d-print-block text-center mb-4 pb-2 border-bottom">
+    <h6 class="text-uppercase mb-0 text-muted">RÉPUBLIQUE DU BURUNDI &bull; VILLE DE BUJAMBURA</h6>
+    <h4 class="fw-bold my-1 text-danger">LISTE OFFICIELLE DES VÉHICULES EN DÉPASSEMENT DE TEMPS</h4>
+    <div class="small">Seuil appliqué : Supérieur à {{ threshold_hours }} heures &bull; Date du relevé : {% now "d/m/Y H:i" %}</div>
+</div>
+
+<!-- Tableau des véhicules en dépassement -->
+<div class="card shadow-sm border-0 border-start border-danger border-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Immatriculation</th>
+                    <th>N° Ticket</th>
+                    <th>Zone de Stationnement</th>
+                    <th>Date & Heure d'Entrée</th>
+                    <th>Temps Écoulé</th>
+                    <th class="text-end">Montant Dû Estimé (BIF)</th>
+                    <th class="text-end no-print">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in violations_list %}
+                <tr>
+                    <td>
+                        <span class="badge bg-dark text-white font-monospace fs-6 px-3 py-2 shadow-sm">
+                            {{ item.ticket.plate_number }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'ticket_detail' item.ticket.pk %}" class="fw-bold text-decoration-none">
+                            #{{ item.ticket.ticket_number }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">{{ item.ticket.zone.name }}</span>
+                    </td>
+                    <td class="small">
+                        <div>{{ item.ticket.entry_time|date:"d/m/Y" }}</div>
+                        <div class="text-danger fw-semibold">{{ item.ticket.entry_time|time:"H:i" }}</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-danger fs-6 px-2 py-1">
+                            {{ item.hours_elapsed }} heures
+                        </span>
+                    </td>
+                    <td class="text-end fw-bold text-danger fs-5">
+                        {{ item.bill|floatformat:0 }} BIF
+                    </td>
+                    <td class="text-end no-print">
+                        <a href="{% url 'ticket_checkout' item.ticket.pk %}" class="btn btn-success btn-sm shadow-sm">
+                            <i class="fa-solid fa-cash-register me-1"></i> Régulariser Sortie
+                        </a>
+                        <a href="{% url 'ticket_detail' item.ticket.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-circle-check fa-3x mb-3 text-success d-block"></i>
+                        Aucun véhicule en infraction pour un seuil supérieur à {{ threshold_hours }} heures.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

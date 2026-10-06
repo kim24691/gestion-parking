@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Tarification Municipale & Catégories de Véhicules{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+        <h3 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-tags text-primary me-2"></i>Tarification & Types de Véhicules
+        </h3>
+        <p class="text-muted small mb-0">
+            Barèmes officiels de stationnement fixés par la <strong>Mairie de Bujumbura</strong> &bull; Monnaie : <strong>Franc Burundi (BIF)</strong>
+        </p>
+    </div>
+    {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'vehicle_type_create' %}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-car-side"></i> Nouveau Type Véhicule
+        </a>
+        <a href="{% url 'tariff_create' %}" class="btn btn-primary shadow-sm">
+            <i class="fa-solid fa-plus"></i> Définir une Règle Tarifaire
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Section 1 : Types de Véhicules -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold text-secondary">
+            <i class="fa-solid fa-car text-primary me-2"></i>Catégories de Véhicules Autorisés
+        </h5>
+    </div>
+    <div class="card-body p-3">
+        <div class="row g-3">
+            {% for vt in vehicle_types %}
+            <div class="col-md-6 col-lg-3">
+                <div class="p-3 border rounded-3 bg-light h-100 shadow-sm">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="badge bg-primary fs-6 p-2 rounded-3">
+                            <i class="fa-solid {{ vt.icon_class }}"></i>
+                        </span>
+                        {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
+                        <a href="{% url 'vehicle_type_edit' vt.pk %}" class="btn btn-sm btn-outline-secondary" title="Modifier">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    <h6 class="fw-bold mb-1">{{ vt.name }}</h6>
+                    <div class="small text-muted mb-2 font-monospace">{{ vt.code }}</div>
+                    <div class="small text-secondary mb-3">{{ vt.description|default:"Véhicule standard" }}</div>
+
+                    <div class="p-2 bg-white rounded border small">
+                        <div class="d-flex justify-content-between py-1 border-bottom">
+                            <span class="text-muted">Par Heure :</span>
+                            <strong class="text-success">{{ vt.default_hourly_rate|floatformat:0 }} BIF</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1">
+                            <span class="text-muted">Par Journée :</span>
+                            <strong class="text-primary">{{ vt.default_daily_rate|floatformat:0 }} BIF</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Section 2 : Grille Tarifaire Détaillée -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold text-secondary">
+            <i class="fa-solid fa-table-list text-primary me-2"></i>Grille Tarifaire Active (BIF)
+        </h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Catégorie de Véhicule</th>
+                    <th>Zone Concernée</th>
+                    <th>Mode de Facturation</th>
+                    <th>Montant (BIF)</th>
+                    <th>Période de Grâce</th>
+                    <th>Plafond Jour</th>
+                    <th>Statut</th>
+                    {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
+                    <th class="text-end">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for tariff in tariffs %}
+                <tr>
+                    <td>
+                        <span class="fw-semibold">
+                            <i class="fa-solid {{ tariff.vehicle_type.icon_class }} text-secondary me-2"></i>
+                            {{ tariff.vehicle_type.name }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if tariff.zone %}
+                            <span class="badge bg-light text-dark border">{{ tariff.zone.name }}</span>
+                        {% else %}
+                            <span class="badge bg-info bg-opacity-25 text-primary border border-info">Toutes les zones (Général)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">{{ tariff.get_tariff_type_display }}</span>
+                    </td>
+                    <td>
+                        <strong class="text-success fs-6">{{ tariff.amount_bif|floatformat:0 }} BIF</strong>
+                    </td>
+                    <td>
+                        <span class="small text-muted">{{ tariff.grace_period_minutes }} min gratuites</span>
+                    </td>
+                    <td>
+                        {% if tariff.max_daily_cap_bif %}
+                            <span class="small fw-semibold">{{ tariff.max_daily_cap_bif|floatformat:0 }} BIF</span>
+                        {% else %}
+                            <span class="text-muted small">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if tariff.is_active %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success">Actif</span>
+                        {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger">Inactif</span>
+                        {% endif %}
+                    </td>
+                    {% if request.user.role == 'ADMIN' or request.user.is_superuser %}
+                    <td class="text-end">
+                        <a href="{% url 'tariff_edit' tariff.pk %}" class="btn btn-outline-primary btn-sm" title="Modifier">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>
+                        <a href="{% url 'tariff_delete' tariff.pk %}" class="btn btn-outline-danger btn-sm" title="Supprimer">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                        Aucun barème tarifaire personnalisé enregistré. Les tarifs par défaut s'appliquent.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

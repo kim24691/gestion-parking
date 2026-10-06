@@ -1,0 +1,126 @@
+# Translation of Bujumbura Parking into Kirundi (rn).
+# Copyright (C) 2026 Bujumbura International University (BIU)
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: bujumbura_parking 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-06 12:45+0200\n"
+"PO-Revision-Date: 2026-10-06 12:45+0200\n"
+"Last-Translator: BIU Software Engineering <info@biu.bi>\n"
+"Language-Team: Kirundi <rn@li.org>\n"
+"Language: rn\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+# Termes Clés Requis par le Cahier des Charges
+msgid "Tableau de bord"
+msgstr "Ikibaho Nyamukuru"
+
+msgid "Entrée Véhicule"
+msgstr "Kwinjira kw'Imodoka"
+
+msgid "Nouvelle Entrée"
+msgstr "Kwinjiza Imodoka Nshasha"
+
+msgid "Sortie Véhicule"
+msgstr "Gusohoka kw'Imodoka"
+
+msgid "Sortie & Encaissement"
+msgstr "Kuriha no Gusohoka"
+
+msgid "Chiffre d'affaires"
+msgstr "Amahera Yinjiye Yose"
+
+msgid "Recettes du Jour"
+msgstr "Amahera Yinjiye Uyumusi"
+
+msgid "Ticket de parking"
+msgstr "Itike yo Guhagarika Imodoka"
+
+msgid "Tickets & Recherche"
+msgstr "Amatike no Kurondera"
+
+msgid "Utilisateurs"
+msgstr "Abakoresha Urubuga"
+
+msgid "Gestion Utilisateurs"
+msgstr "Gutunganya Abakozi"
+
+# Navigation & Interface
+msgid "Places Libres"
+msgstr "Ibibanza Bisigaye"
+
+msgid "Places Occupées"
+msgstr "Ibibanza Bifashwe"
+
+msgid "Taux d'occupation"
+msgstr "Urugero rw'Ibibanza Bifashwe"
+
+msgid "Dépassements (> 8h)"
+msgstr "Abarengeje Umwanya (> 8h)"
+
+msgid "Zones de Parking"
+msgstr "Uturere two Guhagararamwo"
+
+msgid "Grille Tarifaire (BIF)"
+msgstr "Ibiciro (BIF)"
+
+msgid "Rapports & Recettes"
+msgstr "Uruhande rw'Icegeranyo n'Amahera"
+
+msgid "Audit Trail (Historique)"
+msgstr "Ivyakozwe Byose (Amakuru)"
+
+msgid "Mon Profil"
+msgstr "Umwirondoro Wanje"
+
+msgid "Déconnexion"
+msgstr "Gusohoka mu Ruhushya"
+
+msgid "Rechercher"
+msgstr "Rondera"
+
+msgid "Filtrer"
+msgstr "Gutoranya"
+
+msgid "Enregistrer Entrée"
+msgstr "Kwandika Iyinjiye"
+
+msgid "Imprimer"
+msgstr "Gusohora ku Rupapuro"
+
+msgid "Télécharger PDF"
+msgstr "Gukuramo PDF"
+
+msgid "Plaque d'Immatriculation"
+msgstr "Inomero y'Imodoka (Ipurake)"
+
+msgid "Catégorie de Véhicule"
+msgstr "Ubwoko bw'Imodoka"
+
+msgid "Statut"
+msgstr "Uko Yifashe"
+
+msgid "Montant Dû"
+msgstr "Amahera Asabwa"
+
+msgid "Montant Perçu (BIF)"
+msgstr "Amahera Yishyuwe (BIF)"
+
+msgid "Mode de Règlement"
+msgstr "Uburyo bwo Kuriha"
+
+msgid "Actions"
+msgstr "Ibikorwa"
+
+msgid "Bujumbura, Burundi"
+msgstr "Bujumbura, Uburundi"
+
+msgid "Mode Sombre"
+msgstr "Uburyo bwo mu Mwiza"
+
+msgid "Mode Clair"
+msgstr "Uburyo bw'Umuco"

@@ -1,0 +1,376 @@
+/* 
+ * Style Personnalisé - Application de Gestion de Parking de Bujumbura
+ * Projet Académique : Faculté de Génie Logiciel - BIU (Burundi)
+ * Version 2.0 : Responsive Design Intégral, Thèmes Clair/Sombre, Accessibilité (a11y)
+ */
+
+:root {
+  --bjm-primary: #1a365d;
+  --bjm-primary-light: #2563eb;
+  --bjm-secondary: #0f766e;
+  --bjm-accent: #059669;
+  --bjm-warning: #d97706;
+  --bjm-danger: #dc2626;
+  --bjm-dark: #0f172a;
+  --bjm-light: #f8fafc;
+  --sidebar-width: 270px;
+
+  /* Variables Thème Clair (Default) */
+  --bjm-bg-body: #f1f5f9;
+  --bjm-surface: #ffffff;
+  --bjm-surface-alt: #f8fafc;
+  --bjm-text: #1e293b;
+  --bjm-text-muted: #64748b;
+  --bjm-card-border: #e2e8f0;
+  --bjm-topbar-bg: #ffffff;
+  --bjm-sidebar-bg: linear-gradient(180deg, #102a43 0%, #0b1a2b 100%);
+  --bjm-table-hover: rgba(0, 0, 0, 0.02);
+}
+
+/* Variables Thème Sombre (Dark Mode) */
+[data-bs-theme="dark"] {
+  --bjm-bg-body: #0b1326;
+  --bjm-surface: #131e38;
+  --bjm-surface-alt: #1a2747;
+  --bjm-text: #f1f5f9;
+  --bjm-text-muted: #94a3b8;
+  --bjm-card-border: #1e2e4f;
+  --bjm-topbar-bg: #131e38;
+  --bjm-sidebar-bg: linear-gradient(180deg, #091322 0%, #060d17 100%);
+  --bjm-table-hover: rgba(255, 255, 255, 0.04);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  background-color: var(--bjm-bg-body);
+  color: var(--bjm-text);
+  min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
+}
+
+/* Structure Principale */
+.app-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Sidebar Navigation (Desktop) */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--bjm-sidebar-bg);
+  color: #f8fafc;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
+  z-index: 1020;
+}
+
+/* Sidebar Mobile & Tablette (Offcanvas) */
+.mobile-offcanvas-sidebar {
+  width: var(--sidebar-width) !important;
+  background: var(--bjm-sidebar-bg) !important;
+  color: #f8fafc;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brand-box {
+  padding: 1.25rem 1.25rem 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-nav {
+  padding: 1rem 0;
+}
+
+.sidebar-nav .nav-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  padding: 0.75rem 1.25rem 0.35rem 1.25rem;
+}
+
+.sidebar-nav .nav-link {
+  display: flex;
+  align-items: center;
+  color: #cbd5e1;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  border-left: 3px solid transparent;
+  min-height: 42px;
+}
+
+.sidebar-nav .nav-link i {
+  width: 1.5rem;
+  font-size: 1rem;
+  margin-right: 0.65rem;
+  text-align: center;
+  color: #93c5fd;
+  transition: transform 0.2s;
+}
+
+.sidebar-nav .nav-link:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border-left-color: #38bdf8;
+}
+
+.sidebar-nav .nav-link:hover i {
+  transform: scale(1.15);
+  color: #38bdf8;
+}
+
+.sidebar-nav .nav-link.active {
+  color: #ffffff;
+  background: rgba(37, 99, 235, 0.25);
+  border-left-color: #38bdf8;
+  font-weight: 600;
+}
+
+.sidebar-nav .nav-link.active i {
+  color: #38bdf8;
+}
+
+/* Contenu Principal */
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.top-navbar {
+  background-color: var(--bjm-topbar-bg);
+  border-bottom: 1px solid var(--bjm-card-border);
+  padding: 0.75rem 1.25rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  position: sticky;
+  top: 0;
+  z-index: 1010;
+  transition: background-color 0.25s, border-color 0.25s;
+}
+
+.content-body {
+  padding: 1.5rem;
+  flex-grow: 1;
+}
+
+@media (max-width: 767.98px) {
+  .content-body {
+    padding: 1rem 0.75rem;
+  }
+}
+
+/* Cartes (Cards) */
+.card {
+  border: 1px solid var(--bjm-card-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background-color: var(--bjm-surface);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.25s, border-color 0.25s;
+}
+
+.card-header {
+  background-color: var(--bjm-surface);
+  border-bottom: 1px solid var(--bjm-card-border);
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+}
+
+/* Stat KPI Cards */
+.stat-card {
+  border-radius: 0.75rem;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card .stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.stat-card .stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.stat-card .stat-value {
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Bouton Toggle Thème (Dark/Light) */
+.theme-toggle-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bjm-card-border);
+  background-color: var(--bjm-surface-alt);
+  color: var(--bjm-text);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 1rem;
+}
+
+.theme-toggle-btn:hover {
+  transform: rotate(25deg);
+  border-color: var(--bjm-primary-light);
+  color: #f59e0b;
+}
+
+/* Sélecteur de Langue (Language Switcher) */
+.lang-selector-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--bjm-card-border);
+  background-color: var(--bjm-surface-alt);
+  color: var(--bjm-text);
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  min-height: 38px;
+}
+
+.lang-selector-btn:hover {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--bjm-primary-light);
+}
+
+/* Tableaux Responsives & Accessibilité Mobile */
+.table-responsive {
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  vertical-align: middle;
+  color: var(--bjm-text);
+  margin-bottom: 0;
+}
+
+.table th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--bjm-text-muted);
+  background-color: var(--bjm-surface-alt);
+  border-bottom: 2px solid var(--bjm-card-border);
+  padding: 0.75rem 0.85rem;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--bjm-card-border);
+  background-color: transparent;
+}
+
+.table-hover tbody tr:hover td {
+  background-color: var(--bjm-table-hover);
+}
+
+/* Boutons tactiles */
+.btn {
+  border-radius: 0.5rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: all 0.2s ease;
+  min-height: 38px;
+}
+
+.btn-sm {
+  min-height: 32px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.82rem;
+}
+
+/* Receipt Box */
+.receipt-box {
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--bjm-surface);
+  border: 2px dashed #94a3b8;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+[data-bs-theme="dark"] .receipt-box {
+  border-color: #475569;
+}
+
+/* Règles d'Impression (@media print) */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  .sidebar,
+  .mobile-offcanvas-sidebar,
+  .top-navbar,
+  .btn,
+  .no-print,
+  .card-footer,
+  .alert,
+  .theme-toggle-btn,
+  .lang-selector-btn {
+    display: none !important;
+  }
+  .app-wrapper {
+    display: block !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .content-body {
+    padding: 0 !important;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  .receipt-box {
+    border: 1px solid #000000 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
