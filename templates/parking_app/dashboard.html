@@ -1,55 +1,69 @@
 {% extends 'base.html' %}
 {% load i18n %}
 
-{% block title %}{% trans "Tableau de bord" %} - {% trans "Régie des Parkings" %}{% endblock %}
+{% block title %}{% if is_admin %}{% trans "Supervision Municipale" %}{% else %}{% trans "Poste Agent" %} - {{ agent_zone.name|default:"Parking" }}{% endif %} - {% trans "Mairie de Bujumbura" %}{% endblock %}
 
 {% block content %}
-<!-- En-tête du Dashboard & Actions Rapides -->
+{% if is_admin %}
+<!-- ======================================================================= -->
+<!-- 1. DASHBOARD ADMINISTRATEUR (SUPERVISION MUNICIPALE CONSOLIDÉE)         -->
+<!-- ======================================================================= -->
+
+<!-- En-tête de supervision Mairie -->
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
     <div>
-        <h3 class="fw-bold text-dark mb-1">
-            <i class="fa-solid fa-gauge-high text-primary me-2"></i>{% trans "Tableau de bord" %}
+        <div class="badge bg-danger text-white px-3 py-1 mb-2">
+            <i class="fa-solid fa-shield-halved me-1"></i> {% trans "Espace Administrateur Municipal" %}
+        </div>
+        <h3 class="fw-bold mb-1 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-chart-line text-primary"></i>
+            <span>{% trans "Supervision Consolidée des Parkings Publics" %}</span>
         </h3>
         <p class="text-muted small mb-0">
-            {% trans "Supervision en temps réel des zones de parking de la" %} <strong>{{ CITY_NAME }}</strong> &bull; {% trans "Devise" %} : <strong>{{ CURRENCY }}</strong>
+            {% trans "Console centrale de régie & pilotage financier" %} &bull; <strong>{{ CITY_NAME }}</strong> &bull; {% trans "Devise" %} : <strong>{{ CURRENCY }}</strong>
         </p>
     </div>
     <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
-        <a href="{% url 'ticket_entry' %}" class="btn btn-primary btn-lg shadow-sm flex-grow-1 flex-md-grow-0">
-            <i class="fa-solid fa-circle-plus"></i> {% trans "Nouvelle Entrée" %}
+        <a href="{% url 'ticket_entry' %}" class="btn btn-cta-entry btn-touch shadow-sm flex-grow-1 flex-md-grow-0">
+            <i class="fa-solid fa-circle-plus fs-5"></i>
+            <span>{% trans "Nouvelle Entrée" %}</span>
         </a>
-        <a href="{% url 'report_financial' %}" class="btn btn-outline-success shadow-sm flex-grow-1 flex-md-grow-0">
-            <i class="fa-solid fa-file-invoice-dollar"></i> {% trans "Chiffre d'affaires" %}
+        <a href="{% url 'report_financial' %}" class="btn btn-outline-success btn-touch shadow-sm flex-grow-1 flex-md-grow-0">
+            <i class="fa-solid fa-file-invoice-dollar fs-5"></i>
+            <span>{% trans "Rapport Financier" %}</span>
+        </a>
+        <a href="{% url 'zone_create' %}" class="btn btn-outline-primary btn-touch shadow-sm flex-grow-1 flex-md-grow-0">
+            <i class="fa-solid fa-plus-circle me-1"></i> {% trans "Zone" %}
         </a>
     </div>
 </div>
 
-<!-- Rangée 1 : Indicateurs Clés de Performance (KPIs Flexbox & Grid) -->
+<!-- Totalisateurs & KPIs Globaux -->
 <div class="row g-3 mb-4">
-    <!-- Places Libres -->
+    <!-- Places Libres Globales -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="card stat-card shadow-sm border-start border-success border-4 h-100">
             <div class="card-body d-flex align-items-center justify-content-between p-3">
                 <div>
-                    <div class="stat-label text-success">{% trans "Places Libres" %}</div>
+                    <div class="stat-label text-success">{% trans "Places Libres Globales" %}</div>
                     <div class="stat-value text-success">{{ total_available }}</div>
                     <div class="small text-muted mt-1">{% trans "sur" %} {{ total_capacity }} {% trans "places municipales" %}</div>
                 </div>
                 <div class="stat-icon bg-success bg-opacity-10 text-success">
-                    <i class="fa-solid fa-square-check"></i>
+                    <i class="fa-solid fa-square-parking"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Places Occupées -->
+    <!-- Taux d'Occupation Global -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="card stat-card shadow-sm border-start border-primary border-4 h-100">
             <div class="card-body d-flex align-items-center justify-content-between p-3">
                 <div>
-                    <div class="stat-label text-primary">{% trans "Places Occupées" %}</div>
-                    <div class="stat-value text-primary">{{ total_occupied }}</div>
-                    <div class="small text-muted mt-1">{% trans "Taux d'occupation" %} : <strong>{{ global_rate }}%</strong></div>
+                    <div class="stat-label text-primary">{% trans "Occupation Globale" %}</div>
+                    <div class="stat-value text-primary">{{ global_rate }}%</div>
+                    <div class="small text-muted mt-1"><strong>{{ total_occupied }}</strong> {% trans "véhicules stationnés" %}</div>
                 </div>
                 <div class="stat-icon bg-primary bg-opacity-10 text-primary">
                     <i class="fa-solid fa-car"></i>
@@ -58,210 +72,497 @@
         </div>
     </div>
 
-    <!-- Recettes du Jour en BIF -->
+    <!-- Recettes Globales du Jour (BIF) -->
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="card stat-card shadow-sm border-start border-warning border-4 h-100">
             <div class="card-body d-flex align-items-center justify-content-between p-3">
                 <div>
-                    <div class="stat-label text-warning">{% trans "Recettes du Jour" %}</div>
+                    <div class="stat-label text-warning">{% trans "Chiffre d'Affaires du Jour" %}</div>
                     <div class="stat-value text-dark">{{ today_revenue_bif|floatformat:0 }} <span class="fs-6 fw-bold text-success">{{ CURRENCY }}</span></div>
-                    <div class="small text-muted mt-1">{{ today_exits_count }} {% trans "paiements" %}</div>
+                    <div class="small text-muted mt-1">{{ today_exits_count }} {% trans "sorties payées aujourd'hui" %}</div>
                 </div>
                 <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                    <i class="fa-solid fa-money-bill-wave"></i>
+                    <i class="fa-solid fa-coins"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Véhicules en Dépassement / Alertes -->
+    <!-- Recettes Globales du Mois (BIF) -->
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card stat-card shadow-sm border-start border-danger border-4 h-100">
+        <div class="card stat-card shadow-sm border-start border-info border-4 h-100">
             <div class="card-body d-flex align-items-center justify-content-between p-3">
                 <div>
-                    <div class="stat-label text-danger">{% trans "Dépassements (> 8h)" %}</div>
-                    <div class="stat-value text-danger">{{ long_stays_count }}</div>
+                    <div class="stat-label text-info">{% trans "Recettes du Mois en Cours" %}</div>
+                    <div class="stat-value text-dark">{{ month_revenue_bif|floatformat:0 }} <span class="fs-6 fw-bold text-info">{{ CURRENCY }}</span></div>
                     <div class="small text-muted mt-1">
                         <a href="{% url 'report_violations' %}" class="text-danger text-decoration-none fw-semibold">
-                            {% trans "Voir les infractions" %} <i class="fa-solid fa-arrow-right"></i>
+                            <i class="fa-solid fa-triangle-exclamation"></i> {{ long_stays_count }} {% trans "dépassements / alertes" %}
                         </a>
                     </div>
                 </div>
-                <div class="stat-icon bg-danger bg-opacity-10 text-danger">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="fa-solid fa-vault"></i>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Rangée 2 : État des Zones de Parking (Grille Fluide Mobile / Tablette / Desktop) -->
-<div class="card shadow-sm mb-4 border-0">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h5 class="mb-0 fw-bold text-secondary fs-6 fs-md-5">
-            <i class="fa-solid fa-map-location-dot text-primary me-2"></i>{% trans "Zones de Parking" %} &bull; {{ CITY_NAME }}
+<!-- Graphiques Interactifs Chart.js (Évolution & Comparatif Zones) -->
+<div class="row g-4 mb-4">
+    <!-- Graphique 1 : Évolution 7 jours des Recettes & Flux -->
+    <div class="col-12 col-lg-7">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fa-solid fa-chart-area text-primary me-2"></i>{% trans "Évolution du Chiffre d'Affaires & Flux (7 derniers jours)" %}
+                </h6>
+                <span class="badge bg-light text-dark border">BIF / {% trans "Jour" %}</span>
+            </div>
+            <div class="card-body p-3">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="revenueFlowChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphique 2 : Répartition des flux & recettes par Zone -->
+    <div class="col-12 col-lg-5">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">
+                    <i class="fa-solid fa-chart-pie text-success me-2"></i>{% trans "Taux d'Occupation par Zone (%)" %}
+                </h6>
+                <span class="badge bg-light text-dark border">{% trans "Temps Réel" %}</span>
+            </div>
+            <div class="card-body p-3">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="zoneOccupancyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau Détaillé par Zone (Calcul direct de l'argent généré en BIF par zone) -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold fs-6 fs-md-5">
+            <i class="fa-solid fa-building-columns text-primary me-2"></i>{% trans "Bilan Financier & Occupation par Zone de Stationnement" %}
         </h5>
         <a href="{% url 'zone_list' %}" class="btn btn-outline-primary btn-sm">
-            <i class="fa-solid fa-gear"></i> <span class="d-none d-sm-inline">{% trans "Gérer" %}</span>
+            <i class="fa-solid fa-gear me-1"></i> {% trans "Gérer les Zones" %}
         </a>
     </div>
-    <div class="card-body p-3">
-        <div class="row g-3">
-            {% for item in zones_stats %}
-            <div class="col-12 col-sm-6 col-md-4 col-xl">
-                <div class="p-3 border rounded-3 bg-light h-100 position-relative shadow-sm">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="badge bg-dark fw-semibold font-monospace">{{ item.zone.code }}</span>
-                        <span class="badge bg-{{ item.color }} text-white">{{ item.rate }}%</span>
-                    </div>
-                    <h6 class="fw-bold mb-1 text-truncate" title="{{ item.zone.name }}">{{ item.zone.name }}</h6>
-                    <div class="text-muted small mb-2" style="font-size: 0.78rem;">
-                        {{ item.zone.hourly_rate_default|floatformat:0 }} {{ CURRENCY }}/h
-                    </div>
-
-                    <!-- Barre de progression de remplissage -->
-                    <div class="progress mb-2" style="height: 8px;">
-                        <div class="progress-bar bg-{{ item.color }}" role="progressbar" style="width: {{ item.rate }}%;" aria-valuenow="{{ item.rate }}" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-
-                    <div class="d-flex justify-content-between small text-secondary" style="font-size: 0.8rem;">
-                        <span>{% trans "Occupées" %} : <strong>{{ item.occupied }}</strong></span>
-                        <span class="text-success fw-bold">{% trans "Libres" %} : {{ item.available }}</span>
-                    </div>
-                </div>
-            </div>
-            {% empty %}
-            <div class="col-12 text-center py-4 text-muted">
-                {% trans "Aucune zone de stationnement configurée." %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-
-<!-- Rangée 3 : Dernières Entrées & Historique Récent -->
-<div class="row g-4">
-    <!-- Tableau des dernières entrées -->
-    <div class="col-12 col-lg-8">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <h5 class="mb-0 fw-bold text-secondary fs-6 fs-md-5">
-                    <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>{% trans "Entrées & Activités Récentes" %}
-                </h5>
-                <a href="{% url 'ticket_list' %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fa-solid fa-list"></i> <span class="d-none d-sm-inline">{% trans "Tous les tickets" %}</span>
-                </a>
-            </div>
-            
-            <!-- Défilement horizontal fluide sur mobile -->
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>{% trans "Ticket de parking" %}</th>
-                            <th>{% trans "Plaque d'Immatriculation" %}</th>
-                            <th>{% trans "Catégorie de Véhicule" %}</th>
-                            <th>{% trans "Date & Heure" %}</th>
-                            <th>{% trans "Statut" %}</th>
-                            <th class="text-end">{% trans "Actions" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ticket in recent_tickets %}
-                        <tr>
-                            <td>
-                                <span class="fw-semibold text-primary">#{{ ticket.ticket_number|slice:"-6:" }}</span>
-                            </td>
-                            <td>
-                                <span class="badge bg-dark bg-opacity-75 text-white font-monospace px-2 py-1 fs-6">
-                                    {{ ticket.plate_number }}
-                                </span>
-                            </td>
-                            <td>
-                                <div><i class="fa-solid {{ ticket.vehicle_type.icon_class }} me-1 text-secondary"></i>{{ ticket.vehicle_type.name }}</div>
-                                <div class="text-muted small">{{ ticket.zone.name }}</div>
-                            </td>
-                            <td>
-                                <div class="small fw-semibold">{{ ticket.entry_time|date:"d/m/Y" }}</div>
-                                <div class="text-muted small">{{ ticket.entry_time|time:"H:i" }}</div>
-                            </td>
-                            <td>
-                                <span class="badge {{ ticket.get_status_badge }}">
-                                    {{ ticket.get_status_display }}
-                                </span>
-                            </td>
-                            <td class="text-end">
-                                <div class="btn-group btn-group-sm">
-                                    {% if ticket.status == 'EN_COURS' %}
-                                    <a href="{% url 'ticket_checkout' ticket.pk %}" class="btn btn-success shadow-sm" title="{% trans 'Sortie & Encaissement' %}">
-                                        <i class="fa-solid fa-cash-register"></i> <span class="d-none d-md-inline">{% trans "Sortie" %}</span>
-                                    </a>
-                                    {% endif %}
-                                    <a href="{% url 'ticket_detail' ticket.pk %}" class="btn btn-outline-primary" title="{% trans 'Détails' %}">
-                                        <i class="fa-solid fa-eye"></i>
-                                    </a>
-                                    <a href="{% url 'ticket_print' ticket.pk %}" class="btn btn-outline-secondary" title="{% trans 'Imprimer' %}">
-                                        <i class="fa-solid fa-print"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">
-                                {% trans "Aucun véhicule enregistré récemment." %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Récapitulatif Hebdomadaire & Raccourcis (12 col mobile, 4 col desktop) -->
-    <div class="col-12 col-lg-4">
-        <!-- Carte Historique 7 jours -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3">
-                <h6 class="mb-0 fw-bold text-secondary">
-                    <i class="fa-solid fa-chart-simple text-success me-2"></i>{% trans "Chiffre d'affaires" %} (7 jours)
-                </h6>
-            </div>
-            <div class="card-body p-3">
-                <ul class="list-group list-group-flush">
-                    {% for day in last_7_days %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
-                        <span class="small fw-semibold text-secondary">{{ day.day }}</span>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Code" %}</th>
+                    <th>{% trans "Nom de la Zone" %}</th>
+                    <th>{% trans "Capacité" %}</th>
+                    <th>{% trans "Places Libres" %}</th>
+                    <th>{% trans "Taux Remplissage" %}</th>
+                    <th>{% trans "Entrées Jour" %}</th>
+                    <th class="text-end">{% trans "Recettes Jour (BIF)" %}</th>
+                    <th class="text-end">{% trans "Recettes Mois (BIF)" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in zones_stats %}
+                <tr>
+                    <td><span class="badge bg-dark font-monospace">{{ item.zone.code }}</span></td>
+                    <td class="fw-bold">{{ item.zone.name }}</td>
+                    <td>{{ item.zone.total_spots }}</td>
+                    <td>
+                        <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2 py-1">
+                            {{ item.available }}
+                        </span>
+                    </td>
+                    <td style="min-width: 140px;">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-light text-dark border">{{ day.entries }} véh.</span>
-                            <span class="fw-bold text-success">{{ day.revenue|floatformat:0 }} {{ CURRENCY }}</span>
+                            <div class="progress flex-grow-1" style="height: 7px;">
+                                <div class="progress-bar bg-{{ item.color }}" role="progressbar" style="width: {{ item.rate }}%;"></div>
+                            </div>
+                            <span class="small fw-semibold">{{ item.rate }}%</span>
                         </div>
-                    </li>
-                    {% endfor %}
-                </ul>
+                    </td>
+                    <td><span class="badge bg-secondary">{{ item.entries_today }}</span></td>
+                    <td class="text-end fw-bold text-success">{{ item.revenue_today|floatformat:0 }} {{ CURRENCY }}</td>
+                    <td class="text-end fw-bold text-primary">{{ item.revenue_month|floatformat:0 }} {{ CURRENCY }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">{% trans "Aucune zone configurée." %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Derniers Tickets Municipaux -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold">
+            <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>{% trans "Dernières Activités Enregistrées sur les Parkings" %}
+        </h6>
+        <a href="{% url 'ticket_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-list me-1"></i> {% trans "Tous les Tickets" %}
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover table-mobile-cards align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Ticket" %}</th>
+                    <th>{% trans "Plaque" %}</th>
+                    <th>{% trans "Zone" %}</th>
+                    <th>{% trans "Catégorie" %}</th>
+                    <th>{% trans "Entrée" %}</th>
+                    <th>{% trans "Statut" %}</th>
+                    <th class="text-end">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in recent_tickets %}
+                <tr>
+                    <td data-label="{% trans 'Ticket' %}"><span class="fw-bold text-primary">#{{ t.ticket_number|slice:"-6:" }}</span></td>
+                    <td data-label="{% trans 'Plaque' %}"><span class="badge bg-dark font-monospace fs-6">{{ t.plate_number }}</span></td>
+                    <td data-label="{% trans 'Zone' %}">{{ t.zone.name }}</td>
+                    <td data-label="{% trans 'Catégorie' %}">{{ t.vehicle_type.name }}</td>
+                    <td data-label="{% trans 'Entrée' %}">{{ t.entry_time|date:"d/m/Y H:i" }}</td>
+                    <td data-label="{% trans 'Statut' %}"><span class="badge {{ t.get_status_badge }}">{{ t.get_status_display }}</span></td>
+                    <td data-label="{% trans 'Actions' %}" class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            {% if t.status == 'EN_COURS' and t.is_active %}
+                            <a href="{% url 'ticket_checkout' t.pk %}" class="btn btn-cta-checkout"><i class="fa-solid fa-cash-register"></i></a>
+                            {% endif %}
+                            <a href="{% url 'ticket_detail' t.pk %}" class="btn btn-outline-primary"><i class="fa-solid fa-eye"></i></a>
+                            <a href="{% url 'ticket_print' t.pk %}" class="btn btn-outline-secondary"><i class="fa-solid fa-print"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">{% trans "Aucun ticket enregistré." %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<!-- ======================================================================= -->
+<!-- 2. DASHBOARD AGENT DE PARKING (ISOLATION STRICTE PAR ZONE)              -->
+<!-- ======================================================================= -->
+
+{% if has_no_zone %}
+<div class="alert alert-warning border-start border-warning border-4 p-4 my-4 rounded-3 shadow-sm" role="alert">
+    <div class="d-flex align-items-center gap-3">
+        <i class="fa-solid fa-triangle-exclamation fa-2x text-warning"></i>
+        <div>
+            <h5 class="alert-heading fw-bold mb-1">{% trans "Compte non assigné à une zone" %}</h5>
+            <p class="mb-0">{% trans "Votre compte utilisateur n'est actuellement rattaché à aucune zone de stationnement. Veuillez contacter l'administrateur de la Mairie pour configurer votre affectation." %}</p>
+        </div>
+    </div>
+</div>
+{% else %}
+
+<!-- Bandeau du Poste de Contrôle Agent -->
+<div class="card shadow-sm border-0 border-start border-primary border-4 mb-4 bg-primary bg-opacity-10">
+    <div class="card-body p-3 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary text-white font-monospace fs-6">{{ agent_zone.code }}</span>
+                <h4 class="fw-bold mb-0 text-dark">{{ agent_zone.name }}</h4>
+            </div>
+            <div class="text-muted small">
+                <i class="fa-solid fa-user-tag me-1"></i> {% trans "Agent connecté" %} : <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                {% if request.user.badge_id %}&bull; {% trans "Matricule" %} : <strong>{{ request.user.badge_id }}</strong>{% endif %}
             </div>
         </div>
+        <div class="text-end">
+            <span class="badge bg-{{ zone_color }} fs-6 px-3 py-2">
+                {{ zone_occupied }} / {{ zone_total_spots }} {% trans "Places Occupées" %} ({{ zone_rate }}%)
+            </span>
+        </div>
+    </div>
+</div>
 
-        <!-- Liens rapides vers les rapports officiels -->
-        <div class="card shadow-sm border-0 bg-light border">
-            <div class="card-body p-3">
-                <h6 class="fw-bold text-dark mb-2">
-                    <i class="fa-solid fa-print text-primary me-2"></i>{% trans "Rapports & Recettes" %}
-                </h6>
-                <div class="d-grid gap-2">
-                    <a href="{% url 'report_financial' %}" class="btn btn-outline-dark btn-sm text-start">
-                        <i class="fa-solid fa-file-invoice-dollar text-success me-2"></i> {% trans "Rapport Financier des Recettes" %}
-                    </a>
-                    <a href="{% url 'report_daily_traffic' %}" class="btn btn-outline-dark btn-sm text-start">
-                        <i class="fa-solid fa-arrows-left-right text-primary me-2"></i> {% trans "Bilan des Entrées & Sorties" %}
-                    </a>
-                    <a href="{% url 'report_violations' %}" class="btn btn-outline-dark btn-sm text-start">
-                        <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> {% trans "Infractions & Dépassements" %}
-                    </a>
+<!-- GROS BOUTONS D'ACTION TACTILE SUR LE TERRAIN -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6">
+        <a href="{% url 'ticket_entry' %}" class="btn btn-cta-entry btn-touch w-100 py-3 shadow fs-5">
+            <i class="fa-solid fa-circle-plus fa-2x"></i>
+            <span>{% trans "NOUVELLE ENTRÉE VÉHICULE" %}</span>
+        </a>
+    </div>
+    <div class="col-12 col-sm-6">
+        <a href="{% url 'ticket_list' %}" class="btn btn-cta-checkout btn-touch w-100 py-3 shadow fs-5">
+            <i class="fa-solid fa-cash-register fa-2x"></i>
+            <span>{% trans "VÉRIFIER / CLÔTURER TICKET" %}</span>
+        </a>
+    </div>
+</div>
+
+<!-- Barre de Recherche Rapide par Plaque dans ma zone -->
+<div class="card shadow-sm border-0 mb-4 bg-light">
+    <div class="card-body p-3">
+        <form action="{% url 'ticket_list' %}" method="get" class="row g-2 align-items-center">
+            <div class="col-12 col-md-9">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="fa-solid fa-magnifying-glass text-primary"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control border-start-0 text-uppercase fw-bold font-monospace" 
+                           placeholder="{% trans 'Saisir une plaque pour sortir le véhicule (Ex: RA 1234 B)...' %}" 
+                           aria-label="{% trans 'Recherche plaque' %}" autocomplete="off" autofocus>
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <button type="submit" class="btn btn-primary btn-touch w-100 shadow-sm py-2">
+                    <i class="fa-solid fa-arrow-right me-1"></i> {% trans "Rechercher" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KPIs Simplifiés de la Zone -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4">
+        <div class="card stat-card shadow-sm border-start border-success border-4 h-100">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-label text-success">{% trans "Places Libres dans ma Zone" %}</div>
+                    <div class="stat-value text-success">{{ zone_available }}</div>
+                    <div class="small text-muted mt-1">{% trans "sur" %} {{ zone_total_spots }} {% trans "places" %}</div>
+                </div>
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="fa-solid fa-square-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-4">
+        <div class="card stat-card shadow-sm border-start border-primary border-4 h-100">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-label text-primary">{% trans "Entrées Aujourd'hui" %}</div>
+                    <div class="stat-value text-primary">{{ zone_entries_today }}</div>
+                    <div class="small text-muted mt-1">{{ zone_exits_today }} {% trans "sorties effectuées" %}</div>
+                </div>
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fa-solid fa-car"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-4">
+        <div class="card stat-card shadow-sm border-start border-warning border-4 h-100">
+            <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-label text-warning">{% trans "Recettes Perçues (Ma Zone)" %}</div>
+                    <div class="stat-value text-dark">{{ zone_revenue_today|floatformat:0 }} <span class="fs-6 fw-bold text-success">{{ CURRENCY }}</span></div>
+                    <div class="small text-muted mt-1">{% trans "Total de la journée" %}</div>
+                </div>
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="fa-solid fa-coins"></i>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Véhicules Actuellement Présents dans ma Zone (Action Sortie Directe) -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold fs-6 fs-md-5">
+            <i class="fa-solid fa-car-side text-primary me-2"></i>{% trans "Véhicules Stationnés Actuellement" %} ({{ agent_zone.name }})
+        </h5>
+        <span class="badge bg-primary text-white fs-6">{{ current_parked.count }} {% trans "véhicules" %}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover table-mobile-cards align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Ticket" %}</th>
+                    <th>{% trans "Plaque d'Immatriculation" %}</th>
+                    <th>{% trans "Catégorie" %}</th>
+                    <th>{% trans "Heure d'Entrée" %}</th>
+                    <th>{% trans "Durée Écoulée" %}</th>
+                    <th class="text-end">{% trans "Pointage Sortie" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in current_parked %}
+                <tr>
+                    <td data-label="{% trans 'Ticket' %}">
+                        <span class="fw-bold text-primary">#{{ t.ticket_number|slice:"-6:" }}</span>
+                    </td>
+                    <td data-label="{% trans 'Plaque' %}">
+                        <span class="badge bg-dark font-monospace fs-6 px-2 py-1">{{ t.plate_number }}</span>
+                    </td>
+                    <td data-label="{% trans 'Catégorie' %}">
+                        <i class="fa-solid {{ t.vehicle_type.icon_class|default:'fa-car' }} me-1 text-secondary"></i>
+                        {{ t.vehicle_type.name }}
+                    </td>
+                    <td data-label="{% trans 'Entrée' %}">
+                        <span class="fw-semibold">{{ t.entry_time|date:"H:i" }}</span>
+                        <span class="text-muted small">({{ t.entry_time|date:"d/m" }})</span>
+                    </td>
+                    <td data-label="{% trans 'Durée' %}">
+                        <span class="badge bg-light text-dark border">{{ t.formatted_duration }}</span>
+                    </td>
+                    <td data-label="{% trans 'Sortie' %}" class="text-end">
+                        <a href="{% url 'ticket_checkout' t.pk %}" class="btn btn-cta-checkout shadow-sm btn-touch py-1 px-3">
+                            <i class="fa-solid fa-cash-register me-1"></i> {% trans "Sortie / Encaisser" %}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        {% trans "Aucun véhicule en stationnement actuellement dans cette zone." %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if is_admin %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#475569';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
+    // Données injectées depuis la vue Django
+    const daysLabels = {{ chart_days_labels_json|safe }};
+    const daysRevenue = {{ chart_days_revenue_json|safe }};
+    const daysEntries = {{ chart_days_entries_json|safe }};
+
+    const zoneNames = {{ chart_zone_names_json|safe }};
+    const zoneOccupancy = {{ chart_zone_occupancy_json|safe }};
+
+    // 1. Graphique Combiné Recettes & Flux (7 jours)
+    const ctxRevenue = document.getElementById('revenueFlowChart');
+    if (ctxRevenue) {
+        new Chart(ctxRevenue, {
+            type: 'bar',
+            data: {
+                labels: daysLabels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: `{% trans "Recettes (BIF)" %}`,
+                        data: daysRevenue,
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.15)',
+                        borderWidth: 3,
+                        tension: 0.35,
+                        fill: true,
+                        yAxisID: 'yRevenue',
+                    },
+                    {
+                        type: 'bar',
+                        label: `{% trans "Nombre d'Entrées" %}`,
+                        data: daysEntries,
+                        backgroundColor: '#1e3a8a',
+                        borderRadius: 6,
+                        yAxisID: 'yEntries',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: textColor, font: { weight: 'bold' } }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    },
+                    yRevenue: {
+                        type: 'linear',
+                        position: 'left',
+                        ticks: {
+                            color: '#059669',
+                            callback: value => value.toLocaleString('fr-FR') + ' BIF'
+                        },
+                        grid: { color: gridColor }
+                    },
+                    yEntries: {
+                        type: 'linear',
+                        position: 'right',
+                        ticks: { color: '#1e3a8a' },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Graphique Taux d'Occupation par Zone
+    const ctxOccupancy = document.getElementById('zoneOccupancyChart');
+    if (ctxOccupancy) {
+        new Chart(ctxOccupancy, {
+            type: 'doughnut',
+            data: {
+                labels: zoneNames,
+                datasets: [{
+                    data: zoneOccupancy,
+                    backgroundColor: [
+                        '#1e3a8a', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2'
+                    ],
+                    borderWidth: 2,
+                    borderColor: isDark ? '#1e293b' : '#ffffff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: textColor, padding: 12 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw}% {% trans "d'occupation" %}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Écoute de l'événement themeChanged émis par theme.js pour réactualiser si besoin
+    document.addEventListener('themeChanged', function() {
+        // Simple recharge pour adapter la palette sombre
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

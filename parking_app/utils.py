@@ -91,7 +91,7 @@ def agent_or_admin_required(view_func):
 def generate_ticket_pdf(ticket):
     """
     Génère un reçu/ticket de stationnement officiel au format PDF
-    avec en-tête Ville de Bujumbura et Faculté de Génie Logiciel BIU.
+    avec en-tête officiel Mairie de Bujumbura - Régie des Parkings Publics.
     """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -145,11 +145,11 @@ def generate_ticket_pdf(ticket):
 
     elements = []
 
-    # En-tête officiel
+    # En-tête officiel Mairie de Bujumbura
     elements.append(Paragraph("<b>REPUBLIQUE DU BURUNDI</b>", subtitle_style))
     elements.append(Paragraph("<b>MAIRIE DE BUJUMBURA</b>", title_style))
     elements.append(Paragraph("Régie des Parkings Publics Municipaux", subtitle_style))
-    elements.append(Paragraph("<font size=7>BIU - Faculté de Génie Logiciel</font>", subtitle_style))
+    elements.append(Paragraph("<font size=7>Direction des Services Financiers et Fiscaux</font>", subtitle_style))
     elements.append(Spacer(1, 2 * mm))
     elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#cbd5e1')))
     elements.append(Spacer(1, 2 * mm))
@@ -170,8 +170,14 @@ def generate_ticket_pdf(ticket):
         data.extend([
             [Paragraph("Date/Heure Sortie :", body_style), Paragraph(ticket.exit_time.strftime('%d/%m/%Y %H:%M'), body_style)],
             [Paragraph("Durée calculée :", body_style), Paragraph(ticket.formatted_duration(), body_style)],
-            [Paragraph("Mode Paiement :", body_style), Paragraph(ticket.get_payment_method_display(), body_style)],
+            [Paragraph("Frais Parking :", body_style), Paragraph(f"{ticket.parking_fee:,.0f} BIF".replace(',', ' '), body_style)],
         ])
+        if ticket.has_infraction:
+            data.extend([
+                [Paragraph("<font color='#b91c1c'><b>Amende Infraction :</b></font>", body_style), Paragraph(f"<font color='#b91c1c'><b>+{ticket.infraction_fine:,.0f} BIF</b></font>".replace(',', ' '), strong_style)],
+                [Paragraph("Motif Infraction :", body_style), Paragraph(ticket.get_infraction_type_display(), body_style)],
+            ])
+        data.append([Paragraph("Mode Paiement :", body_style), Paragraph(ticket.get_payment_method_display(), body_style)])
 
     table = Table(data, colWidths=[28 * mm, 44 * mm])
     table.setStyle(TableStyle([
@@ -195,7 +201,7 @@ def generate_ticket_pdf(ticket):
         elements.append(Paragraph(f"<font size=7>Agent enregistreur : {agent_name}</font>", subtitle_style))
 
     elements.append(Spacer(1, 3 * mm))
-    elements.append(Paragraph("Conservez ce ticket. En cas de perte, une pénalité forfaitaire sera appliquée conformément aux règlements municipaux.", ParagraphStyle('Notice', alignment=1, fontSize=6, leading=8, textColor=colors.HexColor('#6b7280'))))
+    elements.append(Paragraph("Conservez ce ticket. En cas de perte, une pénalité forfaitaire de 50 000 BIF sera appliquée conformément aux règlements municipaux.", ParagraphStyle('Notice', alignment=1, fontSize=6, leading=8, textColor=colors.HexColor('#6b7280'))))
 
     doc.build(elements)
     buffer.seek(0)
@@ -254,8 +260,8 @@ def generate_financial_report_pdf(start_date, end_date, total_revenue, total_tic
 
     # En-tête
     elements.append(Paragraph("RÉPUBLIQUE DU BURUNDI", subtitle_style))
-    elements.append(Paragraph("VILLE DE BUJAMBURA - GESTION DES PARKINGS PUBLICS", title_style))
-    elements.append(Paragraph("Faculté de Génie Logiciel - Bujumbura International University (BIU)", subtitle_style))
+    elements.append(Paragraph("VILLE DE BUJUMBURA - GESTION DES PARKINGS PUBLICS", title_style))
+    elements.append(Paragraph("Direction Générale des Services Techniques et Fiscaux Municipaux", subtitle_style))
     elements.append(Spacer(1, 4 * mm))
     elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#1a365d')))
     elements.append(Spacer(1, 4 * mm))

@@ -220,16 +220,49 @@ class Tariff(models.Model):
         return f"{self.vehicle_type.name} - {self.get_tariff_type_display()}: {self.amount_bif:,.0f} BIF{zone_str}".replace(',', ' ')
 
 
+class ParkingTicketQuerySet(models.QuerySet):
+    """QuerySet personnalisé pour l'isolation des données par rôle et par zone"""
+    def for_user(self, user):
+        if not user or not user.is_authenticated:
+            return self.none()
+        if user.is_admin_user():
+            return self
+        if user.assigned_zone:
+            return self.filter(zone=user.assigned_zone)
+        return self.none()
+
+
+class ParkingTicketManager(models.Manager):
+    """Manager principal appliquant le scoping automatique des tickets"""
+    def get_queryset(self):
+        return ParkingTicketQuerySet(self.model, using=self._db)
+
+    def for_user(self, user):
+        return self.get_queryset().for_user(user)
+
+
 class ParkingTicket(models.Model):
     """
     Gestion des tickets d'entrée et de sortie des véhicules.
     Enregistre les données partagées et l'historique complet.
     """
+
+    # Amende forfaitaire officielle en cas d'infraction (BIF)
+    INFRACTION_PENALTY_BIF = 50_000
+
     STATUS_CHOICES = [
         ('EN_COURS', 'Stationnement en cours'),
         ('PAYE', 'Payé et Sorti'),
         ('ANNULE', 'Annulé / Désactivé'),
         ('EN_INFRACTION', 'Infraction / Dépassement'),
+    ]
+
+    INFRACTION_TYPE_CHOICES = [
+        ('AUCUNE', 'Aucune infraction'),
+        ('TICKET_PERDU', 'Ticket Perdu / Égaré (+50 000 BIF)'),
+        ('STATIONNEMENT_ABUSIF', 'Stationnement Abusif / Dépassement (+50 000 BIF)'),
+        ('NON_CONFORME', 'Stationnement Hors Marquage / Emplacement Réservé (+50 000 BIF)'),
+        ('AUTRE', 'Autre Infraction Municipale (+50 000 BIF)'),
     ]
 
     PAYMENT_METHOD_CHOICES = [
@@ -238,6 +271,8 @@ class ParkingTicket(models.Model):
         ('ECOCASH', 'EcoCash Mobile'),
         ('BANQUE', 'Virement / Carte bancaire'),
     ]
+
+    objects = ParkingTicketManager()
 
     ticket_number = models.CharField(
         max_length=35,
@@ -343,6 +378,37 @@ class ParkingTicket(models.Model):
         null=True,
         blank=True,
         verbose_name="Date & Heure de désactivation"
+    )
+
+    # --- Gestion des Infractions (Amende forfaitaire : 50 000 BIF) ---
+    has_infraction = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="En infraction"
+    )
+    infraction_type = models.CharField(
+        max_length=40,
+        choices=INFRACTION_TYPE_CHOICES,
+        default='AUCUNE',
+        blank=True,
+        verbose_name="Type d'infraction"
+    )
+    infraction_reason = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Motif / Observations infraction"
+    )
+    infraction_fine = models.DecimalField(
+        max_digits=10,
+        decimal_places=0,
+        default=0,
+        verbose_name="Amende forfaitaire (BIF)"
+    )
+    parking_fee = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        default=0,
+        verbose_name="Frais de stationnement (BIF)"
     )
 
     class Meta:

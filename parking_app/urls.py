@@ -48,4 +48,7 @@ urlpatterns = [
     path('reports/traffic/', views.report_daily_traffic, name='report_daily_traffic'),
     path('reports/financial/', views.report_financial, name='report_financial'),
     path('reports/violations/', views.report_violations, name='report_violations'),
+
+    # API JSON pour Chart.js (Dashboard Admin)
+    path('api/dashboard-chart-data/', views.api_dashboard_chart_data, name='api_dashboard_chart_data'),
 ]

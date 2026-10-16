@@ -26,7 +26,7 @@
                 <div class="fw-bold small text-muted">RÉPUBLIQUE DU BURUNDI</div>
                 <h5 class="fw-bold text-dark mb-0">MAIRIE DE BUJUMBURA</h5>
                 <div class="small text-secondary">Régie des Parkings Publics Municipaux</div>
-                <div class="badge bg-light text-dark border mt-1">Faculté de Génie Logiciel &bull; BIU</div>
+                <div class="badge bg-light text-dark border mt-1">Direction des Services Financiers Municipaux</div>
             </div>
 
             <!-- N° Ticket & Plaque -->
@@ -60,6 +60,20 @@
                     <span class="text-muted">Durée Billetée :</span>
                     <strong>{{ ticket.formatted_duration }}</strong>
                 </div>
+                <div class="d-flex justify-content-between py-1">
+                    <span class="text-muted">Frais Stationnement :</span>
+                    <strong>{{ ticket.parking_fee|floatformat:0 }} BIF</strong>
+                </div>
+                {% if ticket.has_infraction %}
+                <div class="d-flex justify-content-between py-1 text-danger">
+                    <span><strong>Amende Infraction :</strong></span>
+                    <strong>+{{ ticket.infraction_fine|floatformat:0 }} BIF</strong>
+                </div>
+                <div class="d-flex justify-content-between py-1 text-muted" style="font-size: 0.75rem;">
+                    <span>Motif :</span>
+                    <span>{{ ticket.get_infraction_type_display }}</span>
+                </div>
+                {% endif %}
                 <div class="d-flex justify-content-between py-1">
                     <span class="text-muted">Mode Paiement :</span>
                     <strong>{{ ticket.get_payment_method_display }}</strong>

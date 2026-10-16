@@ -1,5 +1,5 @@
 # Translation of Bujumbura Parking into Kirundi (rn).
-# Copyright (C) 2026 Bujumbura International University (BIU)
+# Copyright (C) 2026 Mairie de Bujumbura
 #
 msgid ""
 msgstr ""
@@ -7,7 +7,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-06 12:45+0200\n"
 "PO-Revision-Date: 2026-10-06 12:45+0200\n"
-"Last-Translator: BIU Software Engineering <info@biu.bi>\n"
+"Last-Translator: Régie des Parkings Publics <contact@mairiebujumbura.gov.bi>\n"
 "Language-Team: Kirundi <rn@li.org>\n"
 "Language: rn\n"
 "MIME-Version: 1.0\n"
@@ -124,3 +124,75 @@ msgstr "Uburyo bwo mu Mwiza"
 
 msgid "Mode Clair"
 msgstr "Uburyo bw'Umuco"
+
+msgid "Passer au contenu principal"
+msgstr "Gusimbira ku bikorwa nyamukuru"
+
+msgid "Accueil"
+msgstr "Ahabanza"
+
+msgid "Thème"
+msgstr "Ishusho"
+
+msgid "Menu"
+msgstr "Ibirimwo"
+
+msgid "Tickets"
+msgstr "Amatike"
+
+msgid "Vérifier le Ticket"
+msgstr "Kugenzura Itike"
+
+msgid "Enregistrement de l'Entrée d'un Véhicule"
+msgstr "Kwandika Kwinjira kw'Imodoka"
+
+msgid "Clôture de Stationnement & Encaissement"
+msgstr "Gusoza Guhagarara no Kwishyuza"
+
+msgid "Générer le Ticket d'Entrée"
+msgstr "Gukora Itike yo Kwinjira"
+
+msgid "Encaisser & Libérer la Place"
+msgstr "Kwishyuza no Kurekura Ikibanza"
+
+msgid "Annuler & Retour"
+msgstr "Guhagarika no Gusubira Inyuma"
+
+msgid "Retour aux Détails"
+msgstr "Gusubira ku Bisobanuro"
+
+msgid "Tarif horaire appliqué"
+msgstr "Igiciro cy'isaha cyakoreshejwe"
+
+msgid "Gratuit (Période de grâce)"
+msgstr "Kubuntu (Igihe cy'ubuntu)"
+
+msgid "Choisir la langue"
+msgstr "Hitamo ururimi"
+
+msgid "Recherche par Immatriculation ou N°"
+msgstr "Kurondera ku Ipurake cyangwa Inomero"
+
+msgid "Zone"
+msgstr "Akarere"
+
+msgid "Catégorie"
+msgstr "Ubwoko"
+
+msgid "Entrée"
+msgstr "Iyinjiye"
+
+msgid "Sortie"
+msgstr "Iyasohotse"
+
+msgid "Durée"
+msgstr "Igihe Yamaze"
+
+msgid "Montant"
+msgstr "Amahera"
+
+msgid "Plaque"
+msgstr "Ipurake"
+
+msgid "Ticket"
+msgstr "Itike"

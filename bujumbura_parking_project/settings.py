@@ -1,7 +1,6 @@
 """
 Django settings for bujumbura_parking_project project.
-Projet académique : Faculté de Génie Logiciel - Bujumbura International University (BIU)
-Gestion du Parking Public de la Ville de Bujumbura (Burundi)
+Application officielle de gestion des parkings publics de la Mairie de Bujumbura (Burundi).
 """
 
 from pathlib import Path
@@ -12,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-bujumbura-parking-key-#academic-biu-2026-bif-secure'
+SECRET_KEY = 'django-insecure-bujumbura-parking-key-#mairie-bjm-2026-bif-secure-prod'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

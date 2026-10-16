@@ -7,19 +7,39 @@ from parking_app.models import (
 )
 from parking_app.utils import generate_ticket_number
 
-class ParkingSystemAcademicTests(TestCase):
+class ParkingSystemMunicipalTests(TestCase):
     """
-    Tests académiques complets validant le respect du cahier des charges :
-    - Rôles (Admin vs Agent)
+    Tests officiels validant le respect du cahier des charges de la Mairie de Bujumbura :
+    - Rôles et Isolation des Données (Data Scoping RBAC par Zone)
+    - Gestion des Infractions et calcul automatique de l'amende forfaitaire de 50 000 BIF
     - Traçabilité (ActivityLog / Audit Trail)
-    - CRUD & calculs de stationnement en BIF
+    - CRUD & calculs de tarification dynamique en BIF
     - Rapports et PDF
     """
 
     def setUp(self):
         self.client = Client()
 
-        # 1. Utilisateurs
+        # 1. Zones de parking municipales
+        self.zone_rohero = ParkingZone.objects.create(
+            name="Rohero",
+            code="ROH",
+            description="Boulevard de l'Indépendance",
+            total_spots=10,
+            hourly_rate_default=1000,
+            is_active=True
+        )
+
+        self.zone_marche = ParkingZone.objects.create(
+            name="Marché Central",
+            code="MC",
+            description="Périmètre commercial",
+            total_spots=20,
+            hourly_rate_default=1500,
+            is_active=True
+        )
+
+        # 2. Utilisateurs avec affectation stricte de zone pour agents
         self.admin_user = CustomUser.objects.create_superuser(
             username='admin_test',
             password='password123',
@@ -31,17 +51,16 @@ class ParkingSystemAcademicTests(TestCase):
             username='agent_test',
             password='password123',
             role='AGENT',
+            assigned_zone=self.zone_rohero,
             badge_id='AGT-001'
         )
 
-        # 2. Zone de parking
-        self.zone_rohero = ParkingZone.objects.create(
-            name="Rohero",
-            code="ROH",
-            description="Boulevard de l'Indépendance",
-            total_spots=10,
-            hourly_rate_default=1000,
-            is_active=True
+        self.agent_marche = CustomUser.objects.create_user(
+            username='agent_marche',
+            password='password123',
+            role='AGENT',
+            assigned_zone=self.zone_marche,
+            badge_id='AGT-002'
         )
 
         # 3. Type de véhicule
@@ -287,4 +306,92 @@ class ParkingSystemAcademicTests(TestCase):
         resp_dashboard_en = self.client.get(reverse('dashboard'))
         self.assertEqual(resp_dashboard_en.status_code, 200)
         self.assertContains(resp_dashboard_en, "Dashboard")
+
+    def test_infraction_automatic_fine_50000_bif(self):
+        """Vérifie qu'en cas d'infraction, l'amende forfaitaire de 50 000 BIF est automatiquement ajoutée"""
+        entry_time = timezone.now() - datetime.timedelta(hours=1)
+        ticket = ParkingTicket.objects.create(
+            ticket_number=generate_ticket_number(),
+            plate_number="D 9999 A",
+            vehicle_type=self.veh_voiture,
+            zone=self.zone_rohero,
+            entry_time=entry_time,
+            created_by=self.agent_user,
+            status='EN_COURS',
+            is_active=True
+        )
+
+        self.client.login(username='agent_test', password='password123')
+
+        # Clôture avec infraction constatée (Ticket Perdu)
+        # Frais de stationnement de base : 1000 BIF
+        # Amende forfaitaire : +50 000 BIF -> Total dû : 51 000 BIF
+        response = self.client.post(reverse('ticket_checkout', args=[ticket.id]), {
+            'payment_method': 'ESPECES',
+            'amount_paid': 51000,
+            'has_infraction': 'on',
+            'infraction_type': 'TICKET_PERDU',
+            'infraction_reason': 'Conducteur a déclaré avoir égaré son ticket',
+        })
+        self.assertEqual(response.status_code, 302)
+
+        ticket.refresh_from_db()
+        self.assertTrue(ticket.has_infraction)
+        self.assertEqual(ticket.infraction_type, 'TICKET_PERDU')
+        self.assertEqual(ticket.infraction_fine, 50000)
+        self.assertEqual(ticket.parking_fee, 1000)
+        self.assertEqual(ticket.amount_due, 51000)
+        self.assertEqual(ticket.amount_paid, 51000)
+        self.assertEqual(ticket.status, 'PAYE')
+
+        # Vérification de l'Audit Log avec l'action INFRACTION_CONSTATEE
+        audit = ActivityLog.objects.filter(
+            action='INFRACTION_CONSTATEE',
+            target_id=str(ticket.id)
+        ).first()
+        self.assertIsNotNone(audit)
+        self.assertIn("50 000 BIF", audit.details)
+
+    def test_agent_zone_isolation_rbac(self):
+        """
+        Vérifie l'isolation stricte des données entre les zones (RBAC) :
+        - L'agent Rohero ne peut voir ni modifier les tickets du Marché Central.
+        - L'administrateur peut superviser et clôturer n'importe quel ticket de n'importe quelle zone.
+        """
+        # Ticket dans la zone Marché Central
+        ticket_marche = ParkingTicket.objects.create(
+            ticket_number=generate_ticket_number(),
+            plate_number="MC 8888 A",
+            vehicle_type=self.veh_voiture,
+            zone=self.zone_marche,
+            created_by=self.agent_marche,
+            status='EN_COURS',
+            is_active=True
+        )
+
+        # 1. L'agent de Rohero essaie d'accéder au ticket du Marché Central -> Refus 404 (isolation stricte)
+        self.client.login(username='agent_test', password='password123')
+        resp_detail = self.client.get(reverse('ticket_detail', args=[ticket_marche.id]))
+        self.assertEqual(resp_detail.status_code, 404)
+
+        resp_checkout = self.client.get(reverse('ticket_checkout', args=[ticket_marche.id]))
+        self.assertEqual(resp_checkout.status_code, 404)
+
+        # La liste des tickets de l'agent Rohero ne contient PAS le ticket du Marché Central
+        resp_list = self.client.get(reverse('ticket_list'))
+        self.assertEqual(resp_list.status_code, 200)
+        self.assertNotContains(resp_list, "MC 8888 A")
+
+        # 2. L'agent du Marché Central y accède parfaitement
+        self.client.login(username='agent_marche', password='password123')
+        resp_detail_marche = self.client.get(reverse('ticket_detail', args=[ticket_marche.id]))
+        self.assertEqual(resp_detail_marche.status_code, 200)
+        self.assertContains(resp_detail_marche, "MC 8888 A")
+
+        # 3. L'administrateur municipal a un accès global consolidé
+        self.client.login(username='admin_test', password='password123')
+        resp_admin_list = self.client.get(reverse('ticket_list'))
+        self.assertEqual(resp_admin_list.status_code, 200)
+        self.assertContains(resp_admin_list, "MC 8888 A")
+
 

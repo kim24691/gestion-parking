@@ -1,10 +1,11 @@
+import json
 import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Avg
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import HttpResponse, JsonResponse
@@ -21,6 +22,40 @@ from .utils import (
     log_activity, generate_ticket_number, admin_required, agent_or_admin_required,
     generate_ticket_pdf, generate_financial_report_pdf
 )
+
+
+# ==============================================================================
+# MIXIN DE SCOPE DES DONNÉES (RBAC / Data Isolation par Zone)
+# ==============================================================================
+
+def get_scoped_tickets(user):
+    """
+    Retourne un QuerySet de tickets filtré selon le rôle de l'utilisateur :
+    - ADMIN / Superuser : Voit TOUS les tickets de TOUTES les zones.
+    - AGENT : Ne voit QUE les tickets de sa zone assignée.
+    Cette fonction garantit l'isolation des données entre les agents.
+    """
+    qs = ParkingTicket.objects.select_related('zone', 'vehicle_type', 'created_by', 'closed_by')
+    if user.is_admin_user():
+        return qs
+    if user.assigned_zone:
+        return qs.filter(zone=user.assigned_zone)
+    # Agent sans zone assignée : aucun ticket visible (sécurité maximale)
+    return qs.none()
+
+
+def get_scoped_zones(user):
+    """
+    Retourne les zones visibles selon le rôle :
+    - ADMIN : Toutes les zones actives.
+    - AGENT : Seulement sa zone assignée.
+    """
+    if user.is_admin_user():
+        return ParkingZone.objects.filter(is_active=True)
+    if user.assigned_zone and user.assigned_zone.is_active:
+        return ParkingZone.objects.filter(pk=user.assigned_zone.pk)
+    return ParkingZone.objects.none()
+
 
 
 # ==============================================================================
@@ -122,122 +157,252 @@ def profile_view(request):
 
 
 # ==============================================================================
+# ==============================================================================
 # TABLEAU DE BORD (DASHBOARD)
 # ==============================================================================
 
 @login_required
 def dashboard(request):
     """
-    Tableau de bord principal avec indicateurs clés (KPIs) en temps réel :
-    - Places occupées / libres globales et par zone
-    - Chiffre d'affaires du jour en BIF
-    - Véhicules en infraction (temps dépassé > 8h)
-    - Entrées récentes et actions rapides
+    Tableau de bord intelligent avec isolation des données (Data Scoping) :
+    - Administrateur (Mairie) : Vue globale et consolidée de TOUTES les zones,
+      totalisateurs financiers temps réel (jour et mois), graphiques d'évolution Chart.js.
+    - Agent de Parking : Vue simplifiée à l'extrême, STRICTEMENT filtrée sur sa zone
+      d'affectation (aucun accès aux autres zones ni aux totaux globaux de la Mairie),
+      gros boutons d'action rapide pour le terrain, et liste de ses tickets.
     """
     today = timezone.localdate()
     now = timezone.now()
+    user = request.user
+    first_day_of_month = today.replace(day=1)
 
-    # Zones actives et calculs temps réel
-    zones = ParkingZone.objects.filter(is_active=True)
-    zones_stats = []
-    total_capacity = 0
-    total_occupied = 0
+    if user.is_admin_user():
+        # ----------------------------------------------------------------------
+        # 1. TABLEAU DE BORD ADMINISTRATEUR (SUPERVISION MUNICIPALE CONSOLIDÉE)
+        # ----------------------------------------------------------------------
+        zones = ParkingZone.objects.filter(is_active=True)
+        zones_stats = []
+        total_capacity = 0
+        total_occupied = 0
 
-    for z in zones:
-        occupied = z.get_occupied_spots()
-        available = z.get_available_spots()
-        rate = z.get_occupancy_rate()
-        color = z.get_status_color()
-        total_capacity += z.total_spots
-        total_occupied += occupied
-        zones_stats.append({
-            'zone': z,
-            'occupied': occupied,
-            'available': available,
-            'rate': rate,
-            'color': color,
-        })
+        for z in zones:
+            occupied = z.get_occupied_spots()
+            available = z.get_available_spots()
+            rate = z.get_occupancy_rate()
+            color = z.get_status_color()
+            total_capacity += z.total_spots
+            total_occupied += occupied
 
-    total_available = max(0, total_capacity - total_occupied)
-    global_rate = round((total_occupied / total_capacity * 100), 1) if total_capacity > 0 else 0
+            # Recettes financières en temps réel par zone
+            z_rev_today = ParkingTicket.objects.filter(
+                zone=z,
+                exit_time__date=today,
+                status='PAYE',
+                is_active=True
+            ).aggregate(total=Sum('amount_paid'))['total'] or 0
 
-    # Chiffre d'affaires du jour en BIF
-    today_paid_tickets = ParkingTicket.objects.filter(
-        exit_time__date=today,
-        status='PAYE',
-        is_active=True
-    )
-    today_revenue_bif = today_paid_tickets.aggregate(total=Sum('amount_paid'))['total'] or 0
+            z_rev_month = ParkingTicket.objects.filter(
+                zone=z,
+                exit_time__date__gte=first_day_of_month,
+                status='PAYE',
+                is_active=True
+            ).aggregate(total=Sum('amount_paid'))['total'] or 0
 
-    # Entrées du jour
-    today_entries_count = ParkingTicket.objects.filter(
-        entry_time__date=today,
-        is_active=True
-    ).count()
+            z_entries_today = ParkingTicket.objects.filter(
+                zone=z,
+                entry_time__date=today,
+                is_active=True
+            ).count()
 
-    # Sorties du jour
-    today_exits_count = today_paid_tickets.count()
+            zones_stats.append({
+                'zone': z,
+                'occupied': occupied,
+                'available': available,
+                'rate': rate,
+                'color': color,
+                'revenue_today': z_rev_today,
+                'revenue_month': z_rev_month,
+                'entries_today': z_entries_today,
+            })
 
-    # Véhicules actuellement stationnés depuis plus de 8 heures (Alerte / Infraction)
-    threshold_time = now - datetime.timedelta(hours=8)
-    long_stays_count = ParkingTicket.objects.filter(
-        status='EN_COURS',
-        is_active=True,
-        entry_time__lt=threshold_time
-    ).count()
+        total_available = max(0, total_capacity - total_occupied)
+        global_rate = round((total_occupied / total_capacity * 100), 1) if total_capacity > 0 else 0
 
-    # 10 Dernières entrées de véhicules
-    recent_tickets = ParkingTicket.objects.filter(
-        is_active=True
-    ).select_related('zone', 'vehicle_type', 'created_by')[:8]
-
-    # Historique financier des 7 derniers jours
-    last_7_days = []
-    for i in range(6, -1, -1):
-        day = today - datetime.timedelta(days=i)
-        rev = ParkingTicket.objects.filter(
-            exit_time__date=day,
+        # Totalisateurs financiers globaux en BIF
+        today_paid_tickets = ParkingTicket.objects.filter(
+            exit_time__date=today,
             status='PAYE',
             is_active=True
-        ).aggregate(total=Sum('amount_paid'))['total'] or 0
-        cnt = ParkingTicket.objects.filter(
-            entry_time__date=day,
+        )
+        today_revenue_bif = today_paid_tickets.aggregate(total=Sum('amount_paid'))['total'] or 0
+
+        month_paid_tickets = ParkingTicket.objects.filter(
+            exit_time__date__gte=first_day_of_month,
+            status='PAYE',
+            is_active=True
+        )
+        month_revenue_bif = month_paid_tickets.aggregate(total=Sum('amount_paid'))['total'] or 0
+
+        # Flux du jour
+        today_entries_count = ParkingTicket.objects.filter(
+            entry_time__date=today,
             is_active=True
         ).count()
-        last_7_days.append({
-            'day': day.strftime('%d/%m'),
-            'revenue': int(rev),
-            'entries': cnt,
-        })
+        today_exits_count = today_paid_tickets.count()
 
-    context = {
-        'total_capacity': total_capacity,
-        'total_occupied': total_occupied,
-        'total_available': total_available,
-        'global_rate': global_rate,
-        'today_revenue_bif': today_revenue_bif,
-        'today_entries_count': today_entries_count,
-        'today_exits_count': today_exits_count,
-        'long_stays_count': long_stays_count,
-        'zones_stats': zones_stats,
-        'recent_tickets': recent_tickets,
-        'last_7_days': last_7_days,
-    }
+        # Infractions / Dépassements (> 8h)
+        threshold_time = now - datetime.timedelta(hours=8)
+        long_stays_count = ParkingTicket.objects.filter(
+            status__in=['EN_COURS', 'EN_INFRACTION'],
+            is_active=True,
+            entry_time__lt=threshold_time
+        ).count()
+
+        # Dernières entrées globales
+        recent_tickets = ParkingTicket.objects.filter(
+            is_active=True
+        ).select_related('zone', 'vehicle_type', 'created_by')[:8]
+
+        # Données historiques 7 derniers jours pour graphiques Chart.js
+        last_7_days = []
+        chart_days_labels = []
+        chart_days_revenue = []
+        chart_days_entries = []
+
+        for i in range(6, -1, -1):
+            day = today - datetime.timedelta(days=i)
+            day_str = day.strftime('%d/%m')
+            rev = ParkingTicket.objects.filter(
+                exit_time__date=day,
+                status='PAYE',
+                is_active=True
+            ).aggregate(total=Sum('amount_paid'))['total'] or 0
+            cnt = ParkingTicket.objects.filter(
+                entry_time__date=day,
+                is_active=True
+            ).count()
+
+            last_7_days.append({
+                'day': day_str,
+                'revenue': int(rev),
+                'entries': cnt,
+            })
+            chart_days_labels.append(day_str)
+            chart_days_revenue.append(int(rev))
+            chart_days_entries.append(cnt)
+
+        # Datasets par zone pour graphiques Chart.js
+        chart_zone_names = [z['zone'].name for z in zones_stats]
+        chart_zone_revenues = [int(z['revenue_today']) for z in zones_stats]
+        chart_zone_entries = [z['entries_today'] for z in zones_stats]
+        chart_zone_occupancy = [z['rate'] for z in zones_stats]
+
+        context = {
+            'is_admin': True,
+            'total_capacity': total_capacity,
+            'total_occupied': total_occupied,
+            'total_available': total_available,
+            'global_rate': global_rate,
+            'today_revenue_bif': today_revenue_bif,
+            'month_revenue_bif': month_revenue_bif,
+            'today_entries_count': today_entries_count,
+            'today_exits_count': today_exits_count,
+            'long_stays_count': long_stays_count,
+            'zones_stats': zones_stats,
+            'recent_tickets': recent_tickets,
+            'last_7_days': last_7_days,
+            # JSON pour Chart.js
+            'chart_days_labels_json': json.dumps(chart_days_labels),
+            'chart_days_revenue_json': json.dumps(chart_days_revenue),
+            'chart_days_entries_json': json.dumps(chart_days_entries),
+            'chart_zone_names_json': json.dumps(chart_zone_names),
+            'chart_zone_revenues_json': json.dumps(chart_zone_revenues),
+            'chart_zone_entries_json': json.dumps(chart_zone_entries),
+            'chart_zone_occupancy_json': json.dumps(chart_zone_occupancy),
+        }
+    else:
+        # ----------------------------------------------------------------------
+        # 2. TABLEAU DE BORD AGENT DE TERRAIN (ISOLATION STRICTE PAR ZONE)
+        # ----------------------------------------------------------------------
+        agent_zone = user.assigned_zone
+        if not agent_zone:
+            context = {
+                'is_admin': False,
+                'has_no_zone': True,
+                'agent_zone': None,
+            }
+            return render(request, 'parking_app/dashboard.html', context)
+
+        occupied = agent_zone.get_occupied_spots()
+        available = agent_zone.get_available_spots()
+        rate = agent_zone.get_occupancy_rate()
+        color = agent_zone.get_status_color()
+
+        zone_paid_today = ParkingTicket.objects.filter(
+            zone=agent_zone,
+            exit_time__date=today,
+            status='PAYE',
+            is_active=True
+        )
+        zone_revenue_today = zone_paid_today.aggregate(total=Sum('amount_paid'))['total'] or 0
+        zone_entries_today = ParkingTicket.objects.filter(
+            zone=agent_zone,
+            entry_time__date=today,
+            is_active=True
+        ).count()
+        zone_exits_today = zone_paid_today.count()
+
+        threshold_time = now - datetime.timedelta(hours=8)
+        zone_long_stays = ParkingTicket.objects.filter(
+            zone=agent_zone,
+            status__in=['EN_COURS', 'EN_INFRACTION'],
+            is_active=True,
+            entry_time__lt=threshold_time
+        ).count()
+
+        recent_tickets = ParkingTicket.objects.filter(
+            zone=agent_zone,
+            is_active=True
+        ).select_related('vehicle_type', 'created_by', 'closed_by')[:8]
+
+        current_parked = ParkingTicket.objects.filter(
+            zone=agent_zone,
+            status='EN_COURS',
+            is_active=True
+        ).select_related('vehicle_type', 'created_by').order_by('-entry_time')[:10]
+
+        context = {
+            'is_admin': False,
+            'has_no_zone': False,
+            'agent_zone': agent_zone,
+            'zone_total_spots': agent_zone.total_spots,
+            'zone_occupied': occupied,
+            'zone_available': available,
+            'zone_rate': rate,
+            'zone_color': color,
+            'zone_revenue_today': zone_revenue_today,
+            'zone_entries_today': zone_entries_today,
+            'zone_exits_today': zone_exits_today,
+            'zone_long_stays': zone_long_stays,
+            'current_parked': current_parked,
+            'recent_tickets': recent_tickets,
+        }
+
     return render(request, 'parking_app/dashboard.html', context)
 
 
 # ==============================================================================
-# MODULE STATIONNEMENTS & TICKETS
+# MODULE STATIONNEMENTS & TICKETS (AVEC DATA SCOPING RBAC)
 # ==============================================================================
 
 @login_required
 def ticket_list(request):
     """
     Affichage et recherche avancée des tickets de parking.
-    Filtres : Immatriculation, Zone, Type de véhicule, Statut, Période.
+    Data Scoping : l'agent ne peut voir que les tickets de sa propre zone.
     """
-    form = TicketFilterForm(request.GET)
-    tickets = ParkingTicket.objects.all().select_related('zone', 'vehicle_type', 'created_by', 'closed_by')
+    form = TicketFilterForm(request.GET, user=request.user)
+    tickets = ParkingTicket.objects.for_user(request.user).select_related('zone', 'vehicle_type', 'created_by', 'closed_by')
 
     if form.is_valid():
         q = form.cleaned_data.get('q')
@@ -252,7 +417,7 @@ def ticket_list(request):
                 Q(plate_number__icontains=q) |
                 Q(ticket_number__icontains=q)
             )
-        if zone:
+        if zone and request.user.is_admin_user():
             tickets = tickets.filter(zone=zone)
         if v_type:
             tickets = tickets.filter(vehicle_type=v_type)
@@ -271,6 +436,7 @@ def ticket_list(request):
         'page_obj': page_obj,
         'form': form,
         'total_count': tickets.count(),
+        'is_agent': not request.user.is_admin_user(),
     })
 
 
@@ -279,25 +445,34 @@ def ticket_entry(request):
     """
     Enregistrement de l'entrée d'un véhicule dans le parking municipal :
     - Saisie de la plaque d'immatriculation
-    - Choix de la zone et du type de véhicule
+    - Choix de la zone (restreinte automatiquement à celle de l'agent si sur le terrain)
     - Vérification automatique de disponibilité de place
     - Attribution du numéro de ticket unique
-    - Sauvegarde dans le journal d'audit
+    - Journalisation dans l'Audit Trail
     """
-    # Pré-sélection de la zone assignée à l'agent si applicable
+    user = request.user
+    if not user.is_admin_user() and not user.assigned_zone:
+        messages.error(request, "Accès restreint : Vous n'avez pas de zone d'affectation assignée. Veuillez contacter un administrateur.")
+        return redirect('dashboard')
+
     initial_data = {}
-    if request.user.assigned_zone:
-        initial_data['zone'] = request.user.assigned_zone
+    if user.assigned_zone:
+        initial_data['zone'] = user.assigned_zone
 
     if request.method == 'POST':
-        form = TicketEntryForm(request.POST)
+        form = TicketEntryForm(request.POST, user=user)
         if form.is_valid():
             ticket = form.save(commit=False)
             ticket.ticket_number = generate_ticket_number()
-            ticket.created_by = request.user
+            ticket.created_by = user
             ticket.entry_time = timezone.now()
             ticket.status = 'EN_COURS'
             ticket.is_active = True
+
+            # Pour un agent, sécuriser strictement l'assignation de la zone
+            if not user.is_admin_user():
+                ticket.zone = user.assigned_zone
+
             ticket.save()
 
             log_activity(
@@ -315,9 +490,9 @@ def ticket_entry(request):
             )
             return redirect('ticket_detail', pk=ticket.pk)
     else:
-        form = TicketEntryForm(initial=initial_data)
+        form = TicketEntryForm(initial=initial_data, user=user)
 
-    zones = ParkingZone.objects.filter(is_active=True)
+    zones = get_scoped_zones(user)
     return render(request, 'parking_app/tickets/ticket_entry.html', {
         'form': form,
         'zones': zones,
@@ -328,26 +503,57 @@ def ticket_entry(request):
 def ticket_checkout(request, pk):
     """
     Enregistrement de la sortie d'un véhicule et encaissement :
-    - Calcul automatique de la durée exacte et du montant dû en BIF
-    - Choix du mode de paiement (Espèces, Lumicash, EcoCash)
-    - Enregistrement de l'encaissement et libération de la place
-    - Traçabilité complète
+    - Calcul automatique de la durée exacte et du tarif de base
+    - Gestion dynamique des Infractions : ajout automatique d'une amende forfaitaire de 50 000 BIF
+    - Scoping strict par zone (l'agent ne peut clôturer que les tickets de sa propre zone)
+    - Libération de la place et traçabilité dans l'Audit Trail
     """
-    ticket = get_object_or_404(ParkingTicket, pk=pk, is_active=True)
+    ticket = get_object_or_404(ParkingTicket.objects.for_user(request.user), pk=pk, is_active=True)
 
     if ticket.status == 'PAYE':
         messages.info(request, f"Le ticket #{ticket.ticket_number} a déjà été payé et clôturé.")
         return redirect('ticket_detail', pk=ticket.pk)
 
     now = timezone.now()
-    duration_minutes, amount_due = ticket.calculate_bill(current_time=now)
+    duration_minutes, base_fee = ticket.calculate_bill(current_time=now)
 
     if request.method == 'POST':
         form = TicketCheckoutForm(request.POST)
         if form.is_valid():
+            has_infraction = form.cleaned_data.get('has_infraction', False)
+            infraction_type = form.cleaned_data.get('infraction_type', 'AUCUNE')
+            infraction_reason = form.cleaned_data.get('infraction_reason', '').strip()
+
             ticket.exit_time = now
             ticket.duration_minutes = duration_minutes
-            ticket.amount_due = amount_due
+            ticket.parking_fee = base_fee
+
+            if has_infraction:
+                fine = ParkingTicket.INFRACTION_PENALTY_BIF  # 50 000 BIF
+                ticket.has_infraction = True
+                ticket.infraction_type = infraction_type
+                ticket.infraction_reason = infraction_reason
+                ticket.infraction_fine = fine
+                ticket.amount_due = base_fee + fine
+                action_log = 'INFRACTION_CONSTATEE'
+                details_log = (
+                    f"Sortie avec infraction constatée ({ticket.get_infraction_type_display()}) "
+                    f"pour le véhicule {ticket.plate_number}. Frais: {base_fee:,.0f} BIF + "
+                    f"Amende: {fine:,.0f} BIF. Montant total perçu: {form.cleaned_data['amount_paid']:,.0f} BIF "
+                    f"via {dict(ParkingTicket.PAYMENT_METHOD_CHOICES).get(form.cleaned_data['payment_method'], '')}."
+                ).replace(',', ' ')
+            else:
+                ticket.has_infraction = False
+                ticket.infraction_type = 'AUCUNE'
+                ticket.infraction_fine = 0
+                ticket.amount_due = base_fee
+                action_log = 'SORTIE_PAIEMENT'
+                details_log = (
+                    f"Sortie normale du véhicule {ticket.plate_number} après {ticket.formatted_duration()}. "
+                    f"Montant perçu: {form.cleaned_data['amount_paid']:,.0f} BIF "
+                    f"via {dict(ParkingTicket.PAYMENT_METHOD_CHOICES).get(form.cleaned_data['payment_method'], '')}."
+                ).replace(',', ' ')
+
             ticket.amount_paid = form.cleaned_data['amount_paid']
             ticket.payment_method = form.cleaned_data['payment_method']
             ticket.payment_reference = form.cleaned_data['payment_reference']
@@ -357,28 +563,25 @@ def ticket_checkout(request, pk):
 
             log_activity(
                 request,
-                action='SORTIE_PAIEMENT',
+                action=action_log,
                 target_model='ParkingTicket',
                 target_id=ticket.id,
                 target_repr=f"Ticket #{ticket.ticket_number} ({ticket.plate_number})",
-                details=(
-                    f"Sortie du véhicule {ticket.plate_number} après {ticket.formatted_duration()}. "
-                    f"Montant perçu : {ticket.amount_paid:,.0f} BIF via {ticket.get_payment_method_display()}."
-                ).replace(',', ' ')
+                details=details_log
             )
 
             messages.success(
                 request,
-                f"Sortie validée ! Paiement de {ticket.amount_paid:,.0f} BIF enregistré pour le véhicule {ticket.plate_number}."
+                f"Sortie validée pour {ticket.plate_number} ! Paiement de {ticket.amount_paid:,.0f} BIF enregistré avec succès."
             )
             return redirect('ticket_detail', pk=ticket.pk)
     else:
         form = TicketCheckoutForm(initial={
-            'amount_paid': amount_due,
+            'amount_paid': base_fee,
             'payment_method': 'ESPECES',
+            'has_infraction': False,
         })
 
-    # Calcul formaté de la durée actuelle
     hours = duration_minutes // 60
     rem_min = duration_minutes % 60
     duration_str = f"{hours}h {rem_min}min" if hours > 0 else f"{rem_min} min"
@@ -388,16 +591,16 @@ def ticket_checkout(request, pk):
         'form': form,
         'duration_minutes': duration_minutes,
         'duration_str': duration_str,
-        'amount_due': amount_due,
+        'amount_due': base_fee,
+        'infraction_penalty_bif': ParkingTicket.INFRACTION_PENALTY_BIF,
     })
 
 
 @login_required
 def ticket_detail(request, pk):
-    """Consultation détaillée d'un ticket de stationnement"""
-    ticket = get_object_or_404(ParkingTicket, pk=pk)
+    """Consultation détaillée d'un ticket de stationnement (scoped par zone)"""
+    ticket = get_object_or_404(ParkingTicket.objects.for_user(request.user), pk=pk)
     
-    # Calcul en direct si en cours
     current_minutes = 0
     current_bill = 0
     if ticket.status == 'EN_COURS':
@@ -413,7 +616,7 @@ def ticket_detail(request, pk):
 @login_required
 def ticket_print(request, pk):
     """Affichage du ticket optimisé pour impression web propre (format reçu thermique)"""
-    ticket = get_object_or_404(ParkingTicket, pk=pk)
+    ticket = get_object_or_404(ParkingTicket.objects.for_user(request.user), pk=pk)
     return render(request, 'parking_app/tickets/ticket_print.html', {
         'ticket': ticket,
     })
@@ -422,7 +625,7 @@ def ticket_print(request, pk):
 @login_required
 def ticket_pdf(request, pk):
     """Téléchargement du ticket officiel en format PDF généré par ReportLab"""
-    ticket = get_object_or_404(ParkingTicket, pk=pk)
+    ticket = get_object_or_404(ParkingTicket.objects.for_user(request.user), pk=pk)
     pdf_content = generate_ticket_pdf(ticket)
     
     response = HttpResponse(pdf_content, content_type='application/pdf')
@@ -433,10 +636,9 @@ def ticket_pdf(request, pk):
 @login_required
 def ticket_deactivate(request, pk):
     """
-    Désactivation logique / Annulation d'un ticket :
-    Exige la saisie obligatoire d'un motif et trace l'opération dans le journal d'audit.
+    Désactivation logique / Annulation d'un ticket (scoped par zone)
     """
-    ticket = get_object_or_404(ParkingTicket, pk=pk, is_active=True)
+    ticket = get_object_or_404(ParkingTicket.objects.for_user(request.user), pk=pk, is_active=True)
 
     if request.method == 'POST':
         form = TicketDeactivateForm(request.POST)
@@ -505,8 +707,8 @@ def ticket_delete(request, pk):
 
 @login_required
 def zone_list(request):
-    """Liste de toutes les zones de parking avec état de remplissage en temps réel"""
-    zones = ParkingZone.objects.all()
+    """Liste de toutes les zones de parking avec état de remplissage en temps réel (filtrée pour les agents)"""
+    zones = get_scoped_zones(request.user) if not request.user.is_admin_user() else ParkingZone.objects.all()
     zones_data = []
 
     for z in zones:
@@ -524,6 +726,7 @@ def zone_list(request):
 
     return render(request, 'parking_app/zones/zone_list.html', {
         'zones_data': zones_data,
+        'is_admin': request.user.is_admin_user(),
     })
 
 
@@ -945,23 +1148,24 @@ def report_daily_traffic(request):
     else:
         end_date = today
 
-    # Données agrégées par jour
+    # Données agrégées par jour avec scoping utilisateur
     traffic_by_day = []
     curr = start_date
     total_entries = 0
     total_exits = 0
+    scoped_tickets = ParkingTicket.objects.for_user(request.user)
 
     while curr <= end_date:
-        entries = ParkingTicket.objects.filter(
+        entries = scoped_tickets.filter(
             entry_time__date=curr,
             is_active=True
         ).count()
-        exits = ParkingTicket.objects.filter(
+        exits = scoped_tickets.filter(
             exit_time__date=curr,
             status='PAYE',
             is_active=True
         ).count()
-        rev = ParkingTicket.objects.filter(
+        rev = scoped_tickets.filter(
             exit_time__date=curr,
             status='PAYE',
             is_active=True
@@ -990,7 +1194,7 @@ def report_daily_traffic(request):
 def report_financial(request):
     """
     Rapport financier des recettes globales et par zone exprimées en BIF.
-    Calculs détaillés, totaux et pourcentages.
+    Data Scoping : l'administrateur voit toutes les zones, l'agent ne voit que sa propre zone.
     """
     today = timezone.localdate()
     start_date = request.GET.get('start_date')
@@ -1006,7 +1210,8 @@ def report_financial(request):
     else:
         end_date = today
 
-    paid_tickets = ParkingTicket.objects.filter(
+    scoped_tickets = ParkingTicket.objects.for_user(request.user)
+    paid_tickets = scoped_tickets.filter(
         exit_time__date__gte=start_date,
         exit_time__date__lte=end_date,
         status='PAYE',
@@ -1016,8 +1221,8 @@ def report_financial(request):
     total_revenue = paid_tickets.aggregate(total=Sum('amount_paid'))['total'] or 0
     total_tickets = paid_tickets.count()
 
-    # Recettes par Zone
-    zones = ParkingZone.objects.all()
+    # Recettes par Zone (restreintes pour l'agent)
+    zones = get_scoped_zones(request.user) if not request.user.is_admin_user() else ParkingZone.objects.all()
     zone_data = []
     for z in zones:
         z_tickets = paid_tickets.filter(zone=z)
@@ -1065,6 +1270,7 @@ def report_financial(request):
         'zone_data': zone_data,
         'vehicle_data': vehicle_data,
         'payment_methods_data': payment_methods_data,
+        'is_admin': request.user.is_admin_user(),
     }
 
     if request.GET.get('export') == 'pdf':
@@ -1087,19 +1293,19 @@ def report_financial(request):
 def report_violations(request):
     """
     Liste des infractions ou véhicules ayant dépassé le temps autorisé de stationnement :
+    - Scoped par zone pour les agents de terrain.
     - Véhicules stationnés depuis plus de 8 heures
-    - Véhicules stationnés la nuit
-    - Véhicules avec statut marqué 'EN_INFRACTION'
+    - Véhicules avec statut marqué 'EN_INFRACTION' ou 'has_infraction=True'
     """
     now = timezone.now()
     threshold_hours = int(request.GET.get('hours', 8))
     threshold_time = now - datetime.timedelta(hours=threshold_hours)
 
-    violations_qs = ParkingTicket.objects.filter(
-        status__in=['EN_COURS', 'EN_INFRACTION'],
-        is_active=True,
-        entry_time__lt=threshold_time
-    ).select_related('zone', 'vehicle_type', 'created_by')
+    scoped_tickets = ParkingTicket.objects.for_user(request.user)
+    violations_qs = scoped_tickets.filter(
+        Q(status__in=['EN_COURS', 'EN_INFRACTION'], entry_time__lt=threshold_time) |
+        Q(has_infraction=True, status='EN_COURS')
+    ).filter(is_active=True).select_related('zone', 'vehicle_type', 'created_by').distinct()
 
     violations_list = []
     for t in violations_qs:
@@ -1115,4 +1321,68 @@ def report_violations(request):
         'violations_list': violations_list,
         'threshold_hours': threshold_hours,
         'count': len(violations_list),
+        'is_admin': request.user.is_admin_user(),
+    })
+
+
+@login_required
+def api_dashboard_chart_data(request):
+    """
+    Endpoint JSON retournant les données dynamiques pour les graphiques Chart.js :
+    - Évolution quotidienne des entrées et du chiffre d'affaires (7 derniers jours)
+    - Répartition des flux et recettes par zone
+    """
+    if not request.user.is_admin_user():
+        return JsonResponse({'error': 'Accès non autorisé'}, status=403)
+
+    today = timezone.localdate()
+    days_labels = []
+    days_revenue = []
+    days_entries = []
+
+    for i in range(6, -1, -1):
+        day = today - datetime.timedelta(days=i)
+        day_str = day.strftime('%d/%m')
+        rev = ParkingTicket.objects.filter(
+            exit_time__date=day,
+            status='PAYE',
+            is_active=True
+        ).aggregate(total=Sum('amount_paid'))['total'] or 0
+        cnt = ParkingTicket.objects.filter(
+            entry_time__date=day,
+            is_active=True
+        ).count()
+
+        days_labels.append(day_str)
+        days_revenue.append(int(rev))
+        days_entries.append(cnt)
+
+    zones = ParkingZone.objects.filter(is_active=True)
+    zone_names = []
+    zone_revenues = []
+    zone_entries = []
+
+    for z in zones:
+        rev = ParkingTicket.objects.filter(
+            zone=z,
+            exit_time__date=today,
+            status='PAYE',
+            is_active=True
+        ).aggregate(total=Sum('amount_paid'))['total'] or 0
+        cnt = ParkingTicket.objects.filter(
+            zone=z,
+            entry_time__date=today,
+            is_active=True
+        ).count()
+        zone_names.append(z.name)
+        zone_revenues.append(int(rev))
+        zone_entries.append(cnt)
+
+    return JsonResponse({
+        'days_labels': days_labels,
+        'days_revenue': days_revenue,
+        'days_entries': days_entries,
+        'zone_names': zone_names,
+        'zone_revenues': zone_revenues,
+        'zone_entries': zone_entries,
     })

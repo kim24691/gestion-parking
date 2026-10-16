@@ -4,48 +4,51 @@
 {% block title %}{% trans "Tickets & Recherche" %} - {{ CITY_NAME }}{% endblock %}
 
 {% block content %}
+<!-- En-tête et Action Principale -->
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
     <div>
-        <h3 class="fw-bold text-dark mb-1">
-            <i class="fa-solid fa-ticket text-primary me-2"></i>{% trans "Tickets & Recherche" %}
+        <h3 class="fw-bold mb-1 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-ticket text-primary"></i>
+            <span>{% trans "Tickets & Recherche" %}</span>
         </h3>
         <p class="text-muted small mb-0">
             {% trans "Total des tickets répertoriés" %} : <strong>{{ total_count }}</strong> &bull; {{ CITY_NAME }}
         </p>
     </div>
     <div class="d-flex gap-2 w-100 w-md-auto">
-        <a href="{% url 'ticket_entry' %}" class="btn btn-primary shadow-sm flex-grow-1 flex-md-grow-0">
-            <i class="fa-solid fa-circle-plus"></i> {% trans "Nouvelle Entrée" %}
+        <a href="{% url 'ticket_entry' %}" class="btn btn-cta-entry btn-touch shadow-sm flex-grow-1 flex-md-grow-0">
+            <i class="fa-solid fa-circle-plus fs-5"></i>
+            <span>{% trans "Nouvelle Entrée" %}</span>
         </a>
     </div>
 </div>
 
-<!-- Filtres de recherche avancée -->
+<!-- Filtres de recherche avancée pour agent -->
 <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-white py-3">
-        <h6 class="mb-0 fw-bold text-secondary">
+    <div class="card-header py-3">
+        <h6 class="mb-0 fw-bold">
             <i class="fa-solid fa-magnifying-glass me-2 text-primary"></i>{% trans "Recherche Avancée & Filtres" %}
         </h6>
     </div>
     <div class="card-body p-3">
-        <form method="get" class="row g-2">
-            <div class="col-12 col-md-3">
-                <label class="form-label small fw-semibold text-secondary mb-1">{% trans "Rechercher" %}</label>
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+                <label class="form-label small fw-bold mb-1">{% trans "Recherche par Immatriculation ou N°" %}</label>
                 {{ form.q }}
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label small fw-semibold text-secondary mb-1">{% trans "Zones de Parking" %}</label>
+                <label class="form-label small fw-bold mb-1">{% trans "Zones de Parking" %}</label>
                 {{ form.zone }}
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label small fw-semibold text-secondary mb-1">{% trans "Catégorie de Véhicule" %}</label>
+                <label class="form-label small fw-bold mb-1">{% trans "Catégorie" %}</label>
                 {{ form.vehicle_type }}
             </div>
             <div class="col-6 col-md-2">
-                <label class="form-label small fw-semibold text-secondary mb-1">{% trans "Statut" %}</label>
+                <label class="form-label small fw-bold mb-1">{% trans "Statut" %}</label>
                 {{ form.status }}
             </div>
-            <div class="col-12 col-md-3 d-flex align-items-end gap-2">
+            <div class="col-6 col-md-2 d-flex gap-2">
                 <button type="submit" class="btn btn-primary flex-grow-1">
                     <i class="fa-solid fa-filter me-1"></i> {% trans "Filtrer" %}
                 </button>
@@ -57,20 +60,20 @@
     </div>
 </div>
 
-<!-- Liste des Tickets avec Défilement Responsive -->
+<!-- Liste des Tickets avec Double Solution Responsive (Scroll fluide + Cartes Mobile) -->
 <div class="card shadow-sm border-0">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover table-mobile-cards align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th>{% trans "Ticket de parking" %}</th>
                     <th>{% trans "Plaque d'Immatriculation" %}</th>
-                    <th>{% trans "Catégorie de Véhicule" %}</th>
-                    <th>{% trans "Zones de Parking" %}</th>
+                    <th>{% trans "Catégorie" %}</th>
+                    <th>{% trans "Zone" %}</th>
                     <th>{% trans "Date Entrée" %}</th>
                     <th>{% trans "Date Sortie" %}</th>
                     <th>{% trans "Durée" %}</th>
-                    <th>{% trans "Montant Dû" %} ({{ CURRENCY }})</th>
+                    <th>{% trans "Montant" %} ({{ CURRENCY }})</th>
                     <th>{% trans "Statut" %}</th>
                     <th class="text-end">{% trans "Actions" %}</th>
                 </tr>
@@ -78,7 +81,7 @@
             <tbody>
                 {% for ticket in page_obj %}
                 <tr class="{% if not ticket.is_active %}table-secondary opacity-75{% endif %}">
-                    <td>
+                    <td data-label="{% trans 'Ticket' %}">
                         <a href="{% url 'ticket_detail' ticket.pk %}" class="fw-bold text-decoration-none text-primary">
                             #{{ ticket.ticket_number }}
                         </a>
@@ -86,36 +89,36 @@
                         <span class="badge bg-secondary ms-1" style="font-size: 0.65rem;">{% trans "Désactivé" %}</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td data-label="{% trans 'Plaque' %}">
                         <span class="badge bg-dark text-white font-monospace px-2 py-1 fs-6">
                             {{ ticket.plate_number }}
                         </span>
                     </td>
-                    <td>
-                        <i class="fa-solid {{ ticket.vehicle_type.icon_class }} text-secondary me-1"></i>
+                    <td data-label="{% trans 'Catégorie' %}">
+                        <i class="fa-solid {{ ticket.vehicle_type.icon_class|default:'fa-car' }} text-secondary me-1"></i>
                         {{ ticket.vehicle_type.name }}
                     </td>
-                    <td>
+                    <td data-label="{% trans 'Zone' %}">
                         <span class="badge bg-light text-dark border">{{ ticket.zone.name }}</span>
                     </td>
-                    <td class="small">
+                    <td data-label="{% trans 'Entrée' %}" class="small">
                         {{ ticket.entry_time|date:"d/m/Y H:i" }}
                     </td>
-                    <td class="small">
+                    <td data-label="{% trans 'Sortie' %}" class="small">
                         {% if ticket.exit_time %}
                             {{ ticket.exit_time|date:"d/m/Y H:i" }}
                         {% else %}
                             <span class="text-muted fst-italic">{% trans "En cours" %}</span>
                         {% endif %}
                     </td>
-                    <td class="small">
+                    <td data-label="{% trans 'Durée' %}" class="small">
                         {% if ticket.duration_minutes > 0 %}
                             {{ ticket.formatted_duration }}
                         {% else %}
                             -
                         {% endif %}
                     </td>
-                    <td>
+                    <td data-label="{% trans 'Montant' %}">
                         {% if ticket.amount_paid > 0 %}
                             <strong class="text-success">{{ ticket.amount_paid|floatformat:0 }} {{ CURRENCY }}</strong>
                         {% elif ticket.amount_due > 0 %}
@@ -124,15 +127,22 @@
                             <span class="text-muted">-</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td data-label="{% trans 'Statut' %}">
                         <span class="badge {{ ticket.get_status_badge }}">
                             {{ ticket.get_status_display }}
                         </span>
+                        {% if ticket.has_infraction %}
+                        <div class="mt-1">
+                            <span class="badge bg-danger text-white" style="font-size: 0.7rem;" title="{{ ticket.get_infraction_type_display }}">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i>{% trans "Infraction" %} (+50 000 BIF)
+                            </span>
+                        </div>
+                        {% endif %}
                     </td>
-                    <td class="text-end">
+                    <td data-label="{% trans 'Actions' %}" class="text-end">
                         <div class="btn-group btn-group-sm">
                             {% if ticket.status == 'EN_COURS' and ticket.is_active %}
-                            <a href="{% url 'ticket_checkout' ticket.pk %}" class="btn btn-success" title="{% trans 'Sortie & Encaissement' %}">
+                            <a href="{% url 'ticket_checkout' ticket.pk %}" class="btn btn-cta-checkout shadow-sm" title="{% trans 'Sortie & Encaissement' %}">
                                 <i class="fa-solid fa-cash-register"></i> <span class="d-none d-lg-inline">{% trans "Sortie" %}</span>
                             </a>
                             {% endif %}
@@ -159,15 +169,15 @@
 
     <!-- Pagination Responsive -->
     {% if page_obj.has_other_pages %}
-    <div class="card-footer bg-white d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 py-3">
+    <div class="card-footer d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 py-3">
         <div class="small text-muted">
             {% trans "Page" %} {{ page_obj.number }} {% trans "sur" %} {{ page_obj.paginator.num_pages }}
         </div>
-        <nav>
+        <nav aria-label="{% trans 'Pagination des tickets' %}">
             <ul class="pagination pagination-sm mb-0">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.zone %}&zone={{ request.GET.zone }}{% endif %}{% if request.GET.vehicle_type %}&vehicle_type={{ request.GET.vehicle_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
                         <i class="fa-solid fa-chevron-left"></i>
                     </a>
                 </li>
@@ -179,7 +189,7 @@
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.zone %}&zone={{ request.GET.zone }}{% endif %}{% if request.GET.vehicle_type %}&vehicle_type={{ request.GET.vehicle_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
                         <i class="fa-solid fa-chevron-right"></i>
                     </a>
                 </li>

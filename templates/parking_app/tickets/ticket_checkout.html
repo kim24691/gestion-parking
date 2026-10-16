@@ -1,105 +1,157 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Sortie & Encaissement - Ticket #{{ ticket.ticket_number }}{% endblock %}
+{% block title %}{% trans "Sortie & Encaissement" %} - #{{ ticket.ticket_number }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-12 col-lg-8">
         <div class="card shadow-sm border-0">
             <div class="card-header bg-success text-white py-3">
                 <div class="d-flex align-items-center justify-content-between">
                     <h5 class="mb-0 fw-bold">
-                        <i class="fa-solid fa-cash-register me-2"></i>Clôture de Stationnement & Encaissement
+                        <i class="fa-solid fa-cash-register me-2"></i>{% trans "Clôture de Stationnement & Encaissement" %}
                     </h5>
                     <span class="badge bg-white text-success fw-bold fs-6">
-                        Plaque : {{ ticket.plate_number }}
+                        {% trans "Plaque" %} : {{ ticket.plate_number }}
                     </span>
                 </div>
             </div>
             <div class="card-body p-4">
                 <!-- Récapitulatif du stationnement -->
                 <div class="row g-3 p-3 bg-light rounded-3 border mb-4">
-                    <div class="col-md-4">
-                        <div class="text-muted small">Numéro de Ticket</div>
+                    <div class="col-12 col-sm-4">
+                        <div class="text-muted small">{% trans "Numéro de Ticket" %}</div>
                         <div class="fw-bold text-primary fs-6">#{{ ticket.ticket_number }}</div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="text-muted small">Zone de Parking</div>
+                    <div class="col-12 col-sm-4">
+                        <div class="text-muted small">{% trans "Zone de Parking" %}</div>
                         <div class="fw-bold">{{ ticket.zone.name }} ({{ ticket.zone.code }})</div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="text-muted small">Catégorie</div>
+                    <div class="col-12 col-sm-4">
+                        <div class="text-muted small">{% trans "Catégorie" %}</div>
                         <div class="fw-bold">{{ ticket.vehicle_type.name }}</div>
                     </div>
 
-                    <div class="col-md-4 border-top pt-2">
-                        <div class="text-muted small">Heure d'Entrée</div>
+                    <div class="col-12 col-sm-4 border-top pt-2">
+                        <div class="text-muted small">{% trans "Heure d'Entrée" %}</div>
                         <div class="fw-semibold">{{ ticket.entry_time|date:"d/m/Y H:i" }}</div>
                     </div>
-                    <div class="col-md-4 border-top pt-2">
-                        <div class="text-muted small">Heure de Sortie (Actuelle)</div>
+                    <div class="col-12 col-sm-4 border-top pt-2">
+                        <div class="text-muted small">{% trans "Heure de Sortie (Actuelle)" %}</div>
                         <div class="fw-semibold text-primary">{% now "d/m/Y H:i" %}</div>
                     </div>
-                    <div class="col-md-4 border-top pt-2">
-                        <div class="text-muted small">Durée Écoulée</div>
-                        <div class="fw-bold text-dark fs-6">{{ duration_str }}</div>
+                    <div class="col-12 col-sm-4 border-top pt-2">
+                        <div class="text-muted small">{% trans "Durée Écoulée" %}</div>
+                        <div class="fw-bold fs-6">{{ duration_str }}</div>
                     </div>
                 </div>
 
-                <!-- Montant Calculé Automatiquement en BIF -->
-                <div class="card border-success border-2 bg-success bg-opacity-10 mb-4 p-3 text-center">
-                    <div class="text-secondary small fw-semibold text-uppercase">Montant Dû Calculé Automatiquement</div>
-                    <div class="display-5 fw-bold text-success my-1">
-                        {{ amount_due|floatformat:0 }} <span class="fs-4">BIF</span>
+                <!-- Montant Calculé Automatiquement en BIF (avec attributs pour calcul live) -->
+                <div class="card border-success border-2 bg-success bg-opacity-10 mb-4 p-3 text-center" 
+                     id="billingCard"
+                     data-base-fee="{{ amount_due|floatformat:0 }}"
+                     data-fine-amount="{{ infraction_penalty_bif|default:50000 }}"
+                     data-amount-due="{{ amount_due|floatformat:0 }}">
+                    <div class="text-secondary small fw-bold text-uppercase" id="billingTitle">
+                        {% trans "Montant Dû Calculé Automatiquement" %}
                     </div>
-                    <div class="small text-muted">
-                        Tarif horaire appliqué : {{ ticket.vehicle_type.default_hourly_rate|floatformat:0 }} BIF/heure
+                    <div class="display-5 fw-bold text-success my-1" id="displayedTotalAmount">
+                        {{ amount_due|floatformat:0 }} <span class="fs-4">{{ CURRENCY }}</span>
+                    </div>
+                    <div class="small text-muted" id="billingDetails">
+                        {% trans "Frais de stationnement" %} : <span id="displayedBaseFee">{{ amount_due|floatformat:0 }}</span> {{ CURRENCY }}
+                        <span id="displayedFineTag" class="d-none text-danger fw-bold ms-2">
+                            + <span id="displayedFineAmount">50 000</span> {{ CURRENCY }} ({% trans "Amende Infraction" %})
+                        </span>
                         {% if amount_due == 0 %}
-                        &bull; <span class="badge bg-info text-dark">Gratuit (Période de grâce de 15 minutes)</span>
+                        &bull; <span class="badge bg-info text-dark">{% trans "Gratuit (Période de grâce)" %}</span>
                         {% endif %}
                     </div>
                 </div>
 
-                <!-- Formulaire d'encaissement -->
-                <form method="post" novalidate>
+                <!-- Formulaire d'encaissement avec Switch Infraction -->
+                <form method="post" id="checkoutForm" novalidate>
                     {% csrf_token %}
+
+                    <!-- MODULE INFRACTION (Ticket perdu, stationnement abusif...) -->
+                    <div class="card border-danger border-opacity-50 bg-danger bg-opacity-10 mb-4 p-3 rounded-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-danger fs-4"></i>
+                                <div>
+                                    <h6 class="fw-bold text-danger mb-0">{% trans "Constater une Infraction" %}</h6>
+                                    <div class="small text-muted">{% trans "Applique automatiquement l'amende forfaitaire officielle de" %} <strong>50 000 {{ CURRENCY }}</strong></div>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch fs-4 mb-0">
+                                {{ form.has_infraction }}
+                            </div>
+                        </div>
+
+                        <div id="infractionFieldsCollapse" class="{% if not form.has_infraction.value %}d-none{% endif %} border-top border-danger border-opacity-25 pt-3 mt-2">
+                            <div class="row g-2">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small fw-bold text-danger">
+                                        <i class="fa-solid fa-gavel me-1"></i>{% trans "Type d'Infraction Constatée" %} *
+                                    </label>
+                                    {{ form.infraction_type }}
+                                    {% if form.infraction_type.errors %}
+                                    <div class="text-danger small mt-1 fw-bold">{{ form.infraction_type.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i>{% trans "Observations / Motif" %}
+                                    </label>
+                                    {{ form.infraction_reason }}
+                                    {% if form.infraction_reason.errors %}
+                                    <div class="text-danger small mt-1 fw-bold">{{ form.infraction_reason.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode de Paiement et Montant Perçu -->
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-secondary">
-                                <i class="fa-solid fa-credit-card me-1 text-primary"></i> Mode de Règlement
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fa-solid fa-credit-card me-1 text-primary"></i> {% trans "Mode de Règlement" %}
                             </label>
                             {{ form.payment_method }}
                             {% if form.payment_method.errors %}
-                            <div class="text-danger small mt-1">{{ form.payment_method.errors }}</div>
+                            <div class="text-danger small mt-1 fw-bold">{{ form.payment_method.errors.0 }}</div>
                             {% endif %}
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-secondary">
-                                <i class="fa-solid fa-coins me-1 text-success"></i> Montant Perçu (BIF)
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fa-solid fa-coins me-1 text-success"></i> {% trans "Montant Perçu (BIF)" %}
                             </label>
                             {{ form.amount_paid }}
                             {% if form.amount_paid.errors %}
-                            <div class="text-danger small mt-1">{{ form.amount_paid.errors }}</div>
+                            <div class="text-danger small mt-1 fw-bold">{{ form.amount_paid.errors.0 }}</div>
                             {% endif %}
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label fw-semibold text-secondary small">
-                                <i class="fa-solid fa-mobile-screen me-1 text-primary"></i> Référence Transaction Mobile Money (Lumicash / EcoCash)
+                            <label class="form-label fw-semibold small">
+                                <i class="fa-solid fa-mobile-screen me-1 text-primary"></i> {% trans "Référence Transaction Mobile (Lumicash / EcoCash)" %}
                             </label>
                             {{ form.payment_reference }}
-                            <div class="form-text small">Indiquez le code de transaction SMS en cas de paiement mobile par le conducteur.</div>
+                            <div class="form-text small">{% trans "Indiquez le code de confirmation SMS en cas de paiement mobile." %}</div>
                         </div>
                     </div>
 
                     <!-- Actions -->
-                    <div class="d-flex justify-content-between align-items-center">
-                        <a href="{% url 'ticket_detail' ticket.pk %}" class="btn btn-outline-secondary">
-                            <i class="fa-solid fa-arrow-left me-1"></i> Retour aux Détails
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
+                        <a href="{% url 'ticket_detail' ticket.pk %}" class="btn btn-outline-secondary btn-touch order-2 order-sm-1">
+                            <i class="fa-solid fa-arrow-left me-1"></i> {% trans "Retour aux Détails" %}
                         </a>
-                        <button type="submit" class="btn btn-success btn-lg fw-bold shadow px-4">
-                            <i class="fa-solid fa-circle-check me-2"></i> Encaisser & Libérer la Place
+                        <button type="submit" class="btn btn-cta-checkout btn-touch shadow px-4 order-1 order-sm-2" id="submitCheckoutBtn">
+                            <i class="fa-solid fa-circle-check fs-5"></i>
+                            <span id="btnCheckoutText">{% trans "Encaisser & Libérer la Place" %}</span>
                         </button>
                     </div>
                 </form>
@@ -107,4 +159,73 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const infractionSwitch = document.getElementById('id_has_infraction');
+    const infractionCollapse = document.getElementById('infractionFieldsCollapse');
+    const infractionTypeSelect = document.getElementById('id_infraction_type');
+    const billingCard = document.getElementById('billingCard');
+    const displayedTotal = document.getElementById('displayedTotalAmount');
+    const fineTag = document.getElementById('displayedFineTag');
+    const amountPaidInput = document.getElementById('id_amount_paid');
+    const btnCheckoutText = document.getElementById('btnCheckoutText');
+
+    if (!billingCard || !infractionSwitch) return;
+
+    const baseFee = parseInt(billingCard.dataset.baseFee, 10) || 0;
+    const fineAmount = parseInt(billingCard.dataset.fineAmount, 10) || 50000;
+    const currency = "{{ CURRENCY }}";
+
+    function updateBillingState() {
+        const isInfraction = infractionSwitch.checked;
+        if (infractionCollapse) {
+            if (isInfraction) {
+                infractionCollapse.classList.remove('d-none');
+            } else {
+                infractionCollapse.classList.add('d-none');
+            }
+        }
+
+        const totalDue = isInfraction ? (baseFee + fineAmount) : baseFee;
+        billingCard.dataset.amountDue = totalDue;
+
+        // Mise à jour de l'affichage
+        if (displayedTotal) {
+            displayedTotal.innerHTML = `${totalDue.toLocaleString('fr-FR')} <span class="fs-4">${currency}</span>`;
+        }
+
+        if (fineTag) {
+            if (isInfraction) {
+                fineTag.classList.remove('d-none');
+                billingCard.classList.remove('border-success', 'bg-success');
+                billingCard.classList.add('border-danger', 'bg-danger');
+            } else {
+                fineTag.classList.add('d-none');
+                billingCard.classList.remove('border-danger', 'bg-danger');
+                billingCard.classList.add('border-success', 'bg-success');
+            }
+        }
+
+        // Mettre à jour automatiquement le montant perçu si l'utilisateur ne l'a pas déjà personnalisé
+        if (amountPaidInput) {
+            amountPaidInput.value = totalDue;
+        }
+
+        if (btnCheckoutText) {
+            btnCheckoutText.textContent = isInfraction ? 
+                `{% trans "Encaisser avec Amende (" %}${totalDue.toLocaleString('fr-FR')} ${currency})` :
+                `{% trans "Encaisser & Libérer la Place" %}`;
+        }
+    }
+
+    infractionSwitch.addEventListener('change', updateBillingState);
+    // Initialisation
+    if (infractionSwitch.checked) {
+        updateBillingState();
+    }
+});
+</script>
 {% endblock %}

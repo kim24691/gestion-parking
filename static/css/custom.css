@@ -1,43 +1,139 @@
-/* 
- * Style Personnalisé - Application de Gestion de Parking de Bujumbura
- * Projet Académique : Faculté de Génie Logiciel - BIU (Burundi)
- * Version 2.0 : Responsive Design Intégral, Thèmes Clair/Sombre, Accessibilité (a11y)
- */
+/* ==========================================================================
+   STYLE OFFICIEL - GESTION DU PARKING PUBLIC DE LA MAIRIE DE BUJUMBURA
+   Système de Facturation & Supervision Municipale (Burundi)
+   Version 3.0 : Ergonomie Terrain (Field Agent IHM), Mobile-First,
+                 Thèmes Clair/Sombre Globaux & Persistants, i18n
+   ========================================================================== */
 
-:root {
-  --bjm-primary: #1a365d;
-  --bjm-primary-light: #2563eb;
-  --bjm-secondary: #0f766e;
-  --bjm-accent: #059669;
-  --bjm-warning: #d97706;
-  --bjm-danger: #dc2626;
-  --bjm-dark: #0f172a;
-  --bjm-light: #f8fafc;
+/* --------------------------------------------------------------------------
+   1. VARIABLES CSS (CUSTOM PROPERTIES) - THÈME CLAIR (DÉFAUT)
+   -------------------------------------------------------------------------- */
+:root,
+[data-bs-theme="light"],
+[data-theme="light"] {
+  /* Couleurs d'accent et identité Mairie de Bujumbura */
+  --bjm-primary: #1e3a8a;          /* Bleu officiel Mairie */
+  --bjm-primary-hover: #172554;
+  --bjm-primary-light: #3b82f6;
+  --bjm-primary-subtle: #eff6ff;
+
+  --bjm-success: #059669;          /* Vert validation / Entrée véhicule */
+  --bjm-success-hover: #047857;
+  --bjm-success-subtle: #ecfdf5;
+
+  --bjm-warning: #d97706;          /* Ambre officiel / Sortie & Encaissement BIF */
+  --bjm-warning-hover: #b45309;
+  --bjm-warning-subtle: #fffbeb;
+
+  --bjm-danger: #dc2626;           /* Rouge alerte / Dépassement horaire */
+  --bjm-danger-hover: #b91c1c;
+  --bjm-danger-subtle: #fef2f2;
+
+  --bjm-info: #0284c7;
+  --bjm-info-subtle: #f0f9ff;
+
+  /* Surfaces & Fonds (Thème Clair) */
+  --bjm-bg-body: #f8fafc;
+  --bjm-surface: #ffffff;
+  --bjm-surface-alt: #f1f5f9;
+  --bjm-surface-card: #ffffff;
+  --bjm-surface-hover: #f1f5f9;
+
+  /* Typographie & Contraste WCAG */
+  --bjm-text: #0f172a;
+  --bjm-text-muted: #64748b;
+  --bjm-text-subtle: #94a3b8;
+  --bjm-text-inverse: #ffffff;
+
+  /* Bordures & Séparateurs */
+  --bjm-border: #e2e8f0;
+  --bjm-border-strong: #cbd5e1;
+  --bjm-card-border: #e2e8f0;
+
+  /* Éléments de structure */
+  --bjm-topbar-bg: #ffffff;
+  --bjm-sidebar-bg: linear-gradient(180deg, #0f2744 0%, #0a192f 100%);
+  --bjm-bottom-bar-bg: #ffffff;
   --sidebar-width: 270px;
 
-  /* Variables Thème Clair (Default) */
-  --bjm-bg-body: #f1f5f9;
-  --bjm-surface: #ffffff;
-  --bjm-surface-alt: #f8fafc;
-  --bjm-text: #1e293b;
-  --bjm-text-muted: #64748b;
-  --bjm-card-border: #e2e8f0;
-  --bjm-topbar-bg: #ffffff;
-  --bjm-sidebar-bg: linear-gradient(180deg, #102a43 0%, #0b1a2b 100%);
-  --bjm-table-hover: rgba(0, 0, 0, 0.02);
+  /* Formulaires & Tableaux */
+  --bjm-input-bg: #ffffff;
+  --bjm-input-border: #cbd5e1;
+  --bjm-table-header-bg: #f8fafc;
+  --bjm-table-hover: rgba(30, 58, 138, 0.03);
+
+  /* Ombres portées douces */
+  --bjm-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --bjm-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --bjm-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 }
 
-/* Variables Thème Sombre (Dark Mode) */
-[data-bs-theme="dark"] {
-  --bjm-bg-body: #0b1326;
-  --bjm-surface: #131e38;
-  --bjm-surface-alt: #1a2747;
-  --bjm-text: #f1f5f9;
+/* --------------------------------------------------------------------------
+   2. VARIABLES CSS (CUSTOM PROPERTIES) - THÈME SOMBRE (DARK MODE)
+   -------------------------------------------------------------------------- */
+[data-bs-theme="dark"],
+[data-theme="dark"] {
+  /* Couleurs ajustées pour contraste optimal en basse luminosité */
+  --bjm-primary: #3b82f6;
+  --bjm-primary-hover: #60a5fa;
+  --bjm-primary-light: #93c5fd;
+  --bjm-primary-subtle: rgba(59, 130, 246, 0.15);
+
+  --bjm-success: #10b981;
+  --bjm-success-hover: #34d399;
+  --bjm-success-subtle: rgba(16, 185, 129, 0.15);
+
+  --bjm-warning: #f59e0b;
+  --bjm-warning-hover: #fbbf24;
+  --bjm-warning-subtle: rgba(245, 158, 11, 0.15);
+
+  --bjm-danger: #ef4444;
+  --bjm-danger-hover: #f87171;
+  --bjm-danger-subtle: rgba(239, 68, 68, 0.15);
+
+  --bjm-info: #38bdf8;
+  --bjm-info-subtle: rgba(56, 189, 248, 0.15);
+
+  /* Surfaces & Fonds (Thème Sombre reposant) */
+  --bjm-bg-body: #0b1329;          /* Bleu nuit profond */
+  --bjm-surface: #131f37;
+  --bjm-surface-alt: #1a2948;
+  --bjm-surface-card: #131f37;
+  --bjm-surface-hover: #1e2e4f;
+
+  /* Typographie & Contraste WCAG */
+  --bjm-text: #f8fafc;
   --bjm-text-muted: #94a3b8;
+  --bjm-text-subtle: #64748b;
+  --bjm-text-inverse: #0f172a;
+
+  /* Bordures */
+  --bjm-border: #1e2e4f;
+  --bjm-border-strong: #2c426e;
   --bjm-card-border: #1e2e4f;
-  --bjm-topbar-bg: #131e38;
-  --bjm-sidebar-bg: linear-gradient(180deg, #091322 0%, #060d17 100%);
+
+  /* Éléments de structure */
+  --bjm-topbar-bg: #131f37;
+  --bjm-sidebar-bg: linear-gradient(180deg, #070e1c 0%, #040912 100%);
+  --bjm-bottom-bar-bg: #131f37;
+
+  /* Formulaires & Tableaux */
+  --bjm-input-bg: #0f172a;
+  --bjm-input-border: #2c426e;
+  --bjm-table-header-bg: #1a2948;
   --bjm-table-hover: rgba(255, 255, 255, 0.04);
+
+  /* Ombres adaptées */
+  --bjm-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --bjm-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --bjm-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+}
+
+/* --------------------------------------------------------------------------
+   3. STYLES GÉNÉRAUX & TRANSITIONS
+   -------------------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -45,18 +141,49 @@ body {
   background-color: var(--bjm-bg-body);
   color: var(--bjm-text);
   min-height: 100vh;
+  margin: 0;
   transition: background-color 0.25s ease, color 0.25s ease;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Structure Principale */
+/* Liens d'évitement pour l'accessibilité au clavier (a11y) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 10px;
+  background: var(--bjm-primary);
+  color: #ffffff;
+  padding: 8px 16px;
+  z-index: 9999;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 10px;
+}
+
+/* Structure globale */
 .app-wrapper {
   display: flex;
   min-height: 100vh;
   width: 100%;
 }
 
-/* Sidebar Navigation (Desktop) */
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  transition: margin-left 0.25s ease;
+}
+
+/* --------------------------------------------------------------------------
+   4. NAVIGATION LATÉRALE (SIDEBAR DESKTOP >= 992px)
+   -------------------------------------------------------------------------- */
 .sidebar {
   width: var(--sidebar-width);
   background: var(--bjm-sidebar-bg);
@@ -66,11 +193,18 @@ body {
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
   z-index: 1020;
 }
 
-/* Sidebar Mobile & Tablette (Offcanvas) */
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
 .mobile-offcanvas-sidebar {
   width: var(--sidebar-width) !important;
   background: var(--bjm-sidebar-bg) !important;
@@ -85,7 +219,7 @@ body {
 }
 
 .sidebar-nav {
-  padding: 1rem 0;
+  padding: 0.75rem 0;
 }
 
 .sidebar-nav .nav-header {
@@ -106,12 +240,13 @@ body {
   font-weight: 500;
   transition: all 0.2s ease-in-out;
   border-left: 3px solid transparent;
-  min-height: 42px;
+  min-height: 44px;
+  text-decoration: none;
 }
 
 .sidebar-nav .nav-link i {
   width: 1.5rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
   margin-right: 0.65rem;
   text-align: center;
   color: #93c5fd;
@@ -140,20 +275,14 @@ body {
   color: #38bdf8;
 }
 
-/* Contenu Principal */
-.main-content {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  width: 100%;
-}
-
+/* --------------------------------------------------------------------------
+   5. NAVIGATION SUPÉRIEURE (TOPBAR)
+   -------------------------------------------------------------------------- */
 .top-navbar {
   background-color: var(--bjm-topbar-bg);
-  border-bottom: 1px solid var(--bjm-card-border);
-  padding: 0.75rem 1.25rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid var(--bjm-border);
+  padding: 0.65rem 1.25rem;
+  box-shadow: var(--bjm-shadow-sm);
   position: sticky;
   top: 0;
   z-index: 1010;
@@ -165,19 +294,169 @@ body {
   flex-grow: 1;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
   .content-body {
-    padding: 1rem 0.75rem;
+    padding: 1rem 0.75rem 5.5rem 0.75rem; /* Espace pour la barre tactile basse */
   }
 }
 
-/* Cartes (Cards) */
+/* --------------------------------------------------------------------------
+   6. BARRE D'ACTIONS RAPIDES BASSE (MOBILE FIELD AGENT BOTTOM BAR < 992px)
+   -------------------------------------------------------------------------- */
+.mobile-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: var(--bjm-bottom-bar-bg);
+  border-top: 1px solid var(--bjm-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 1030;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-bottom-bar .bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--bjm-text-muted);
+  text-decoration: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  min-width: 58px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+}
+
+.mobile-bottom-bar .bar-item i {
+  font-size: 1.25rem;
+  margin-bottom: 2px;
+  transition: transform 0.15s ease;
+}
+
+.mobile-bottom-bar .bar-item.active,
+.mobile-bottom-bar .bar-item:hover {
+  color: var(--bjm-primary);
+}
+
+.mobile-bottom-bar .bar-item.active i {
+  transform: translateY(-2px);
+}
+
+/* Bouton d'Entrée Flottant au centre du pouce (FAB Field Agent) */
+.mobile-bottom-bar .bar-fab-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--bjm-success) 0%, #047857 100%);
+  color: #ffffff !important;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+  transform: translateY(-16px);
+  border: 3px solid var(--bjm-surface);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mobile-bottom-bar .bar-fab-entry:hover,
+.mobile-bottom-bar .bar-fab-entry:active {
+  transform: translateY(-18px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.55);
+}
+
+.mobile-bottom-bar .bar-fab-entry i {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   7. CALL-TO-ACTION (CTA) ÉPURÉS & ERGONOMIQUES POUR AGENTS DE TERRAIN
+   -------------------------------------------------------------------------- */
+.btn {
+  border-radius: 0.5rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  min-height: 42px;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+/* Gros boutons tactiles pour tablettes & smartphones */
+.btn-touch {
+  min-height: 48px;
+  padding: 0.65rem 1.25rem;
+  font-size: 1rem;
+}
+
+/* CTA 1 : Enregistrer une Entrée (Vert vif haute visibilité) */
+.btn-cta-entry {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff !important;
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+}
+
+.btn-cta-entry:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  box-shadow: 0 6px 14px rgba(5, 150, 105, 0.35);
+  transform: translateY(-1px);
+}
+
+/* CTA 2 : Clôturer Ticket / Sortie & Encaissement BIF (Ambre / Or) */
+.btn-cta-checkout {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff !important;
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.25);
+}
+
+.btn-cta-checkout:hover {
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+  box-shadow: 0 6px 14px rgba(217, 119, 6, 0.35);
+  transform: translateY(-1px);
+}
+
+/* CTA 3 : Recherche & Filtres */
+.btn-cta-search {
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  color: #ffffff !important;
+  border: none;
+  font-weight: 600;
+}
+
+.btn-cta-search:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   8. CARTES DE PERFORMANCE (KPI STAT CARDS)
+   -------------------------------------------------------------------------- */
 .card {
   border: 1px solid var(--bjm-card-border);
   border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--bjm-shadow-sm);
   background-color: var(--bjm-surface);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.25s, border-color 0.25s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.25s, border-color 0.25s;
 }
 
 .card-header {
@@ -187,113 +466,130 @@ body {
   font-weight: 600;
 }
 
-/* Stat KPI Cards */
 .stat-card {
   border-radius: 0.75rem;
   position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  border-left-width: 5px !important;
 }
 
 .stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--bjm-shadow-md);
 }
 
 .stat-card .stat-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 0.75rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   flex-shrink: 0;
 }
 
 .stat-card .stat-label {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.25rem;
 }
 
 .stat-card .stat-value {
-  font-size: 1.65rem;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.15;
 }
 
-/* Bouton Toggle Thème (Dark/Light) */
+/* --------------------------------------------------------------------------
+   9. BOUTON TOGGLE THÈME & SÉLECTEUR DE LANGUE (i18n)
+   -------------------------------------------------------------------------- */
 .theme-toggle-btn {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--bjm-card-border);
+  border: 1px solid var(--bjm-border);
   background-color: var(--bjm-surface-alt);
   color: var(--bjm-text);
   cursor: pointer;
   transition: all 0.25s ease;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
 .theme-toggle-btn:hover {
   transform: rotate(25deg);
   border-color: var(--bjm-primary-light);
-  color: #f59e0b;
+  color: var(--bjm-warning);
 }
 
-/* Sélecteur de Langue (Language Switcher) */
 .lang-selector-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  border: 1px solid var(--bjm-card-border);
+  gap: 0.45rem;
+  border: 1px solid var(--bjm-border);
   background-color: var(--bjm-surface-alt);
   color: var(--bjm-text);
-  padding: 0.35rem 0.7rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  min-height: 38px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  min-height: 40px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .lang-selector-btn:hover {
-  background-color: rgba(37, 99, 235, 0.1);
-  color: var(--bjm-primary-light);
+  background-color: var(--bjm-primary-subtle);
+  color: var(--bjm-primary);
+  border-color: var(--bjm-primary);
 }
 
-/* Tableaux Responsives & Accessibilité Mobile */
+/* --------------------------------------------------------------------------
+   10. TABLEAUX RESPONSIVES & MODE MOBILE CARDS (DOUBLE SOLUTION UX)
+   -------------------------------------------------------------------------- */
+/* A. Défilement horizontal fluide standard avec indicateur */
 .table-responsive {
   border-radius: 0.5rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--bjm-border-strong);
+  border-radius: 3px;
+}
+
 .table {
   vertical-align: middle;
   color: var(--bjm-text);
   margin-bottom: 0;
+  border-color: var(--bjm-border);
 }
 
 .table th {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--bjm-text-muted);
-  background-color: var(--bjm-surface-alt);
-  border-bottom: 2px solid var(--bjm-card-border);
-  padding: 0.75rem 0.85rem;
+  background-color: var(--bjm-table-header-bg);
+  border-bottom: 2px solid var(--bjm-border-strong);
+  padding: 0.85rem 0.95rem;
   white-space: nowrap;
 }
 
 .table td {
-  padding: 0.75rem 0.85rem;
-  border-bottom: 1px solid var(--bjm-card-border);
+  padding: 0.85rem 0.95rem;
+  border-bottom: 1px solid var(--bjm-border);
   background-color: transparent;
 }
 
@@ -301,25 +597,186 @@ body {
   background-color: var(--bjm-table-hover);
 }
 
-/* Boutons tactiles */
-.btn {
+/* B. Mode de Transformation Table-to-Cards sur Smartphone (< 768px) */
+@media (max-width: 767.98px) {
+  .table-mobile-cards thead {
+    display: none; /* Masque les en-têtes classiques */
+  }
+
+  .table-mobile-cards tbody,
+  .table-mobile-cards tr,
+  .table-mobile-cards td {
+    display: block;
+    width: 100%;
+  }
+
+  .table-mobile-cards tr {
+    margin-bottom: 1rem;
+    background-color: var(--bjm-surface);
+    border: 1px solid var(--bjm-card-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    box-shadow: var(--bjm-shadow-sm);
+  }
+
+  .table-mobile-cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px dashed var(--bjm-border);
+    font-size: 0.9rem;
+    text-align: right;
+  }
+
+  .table-mobile-cards td:last-child {
+    border-bottom: none;
+    padding-top: 0.85rem;
+    justify-content: flex-end;
+  }
+
+  /* Injection du libellé d'en-tête via attr(data-label) */
+  .table-mobile-cards td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bjm-text-muted);
+    text-align: left;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   11. FORMULAIRES & ERGONOMIE DE SAISIE (PLAQUE IMMATRICULATION)
+   -------------------------------------------------------------------------- */
+.form-label {
+  font-weight: 600;
+  color: var(--bjm-text);
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+
+.form-control,
+.form-select {
+  background-color: var(--bjm-input-bg);
+  color: var(--bjm-text);
+  border: 1px solid var(--bjm-input-border);
   border-radius: 0.5rem;
-  font-weight: 500;
+  min-height: 44px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--bjm-input-bg);
+  color: var(--bjm-text);
+  border-color: var(--bjm-primary-light);
+  box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.2);
+}
+
+.form-control-lg {
+  min-height: 52px;
+  font-size: 1.15rem;
+}
+
+/* Boîte de rendu visuel Plaque d'immatriculation du Burundi */
+.plate-badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  transition: all 0.2s ease;
-  min-height: 38px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.35rem;
+  background-color: #0f172a;
+  color: #ffffff;
+  border: 2px solid #64748b;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
-.btn-sm {
-  min-height: 32px;
-  padding: 0.25rem 0.55rem;
-  font-size: 0.82rem;
+/* Rendu simulateur monnaie pour agent de guichet */
+.change-calculator-box {
+  background-color: var(--bjm-surface-alt);
+  border: 2px solid var(--bjm-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
 }
 
-/* Receipt Box */
+/* --------------------------------------------------------------------------
+   12. ADAPTATIONS GLOBALES DES COMPOSANTS BOOTSTRAP AU MODE SOMBRE
+   -------------------------------------------------------------------------- */
+[data-bs-theme="dark"] .dropdown-menu,
+[data-theme="dark"] .dropdown-menu {
+  background-color: var(--bjm-surface);
+  border: 1px solid var(--bjm-border);
+  color: var(--bjm-text);
+}
+
+[data-bs-theme="dark"] .dropdown-item,
+[data-theme="dark"] .dropdown-item {
+  color: var(--bjm-text);
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:hover {
+  background-color: var(--bjm-surface-alt);
+  color: #ffffff;
+}
+
+[data-bs-theme="dark"] .modal-content,
+[data-theme="dark"] .modal-content {
+  background-color: var(--bjm-surface);
+  border: 1px solid var(--bjm-border);
+  color: var(--bjm-text);
+}
+
+[data-bs-theme="dark"] .modal-header,
+[data-bs-theme="dark"] .modal-footer,
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+  border-color: var(--bjm-border);
+}
+
+[data-bs-theme="dark"] .bg-light,
+[data-theme="dark"] .bg-light {
+  background-color: var(--bjm-surface-alt) !important;
+}
+
+[data-bs-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-white {
+  background-color: var(--bjm-surface) !important;
+  color: var(--bjm-text);
+}
+
+[data-bs-theme="dark"] .text-dark,
+[data-theme="dark"] .text-dark {
+  color: var(--bjm-text) !important;
+}
+
+[data-bs-theme="dark"] .text-muted,
+[data-theme="dark"] .text-muted {
+  color: var(--bjm-text-muted) !important;
+}
+
+[data-bs-theme="dark"] .border,
+[data-theme="dark"] .border {
+  border-color: var(--bjm-border) !important;
+}
+
+[data-bs-theme="dark"] .list-group-item,
+[data-theme="dark"] .list-group-item {
+  background-color: var(--bjm-surface);
+  color: var(--bjm-text);
+  border-color: var(--bjm-border);
+}
+
+/* --------------------------------------------------------------------------
+   13. BOÎTE TICKET & IMPRESSION (@media print)
+   -------------------------------------------------------------------------- */
 .receipt-box {
   max-width: 420px;
   margin: 0 auto;
@@ -327,14 +784,14 @@ body {
   border: 2px dashed #94a3b8;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--bjm-shadow-md);
 }
 
-[data-bs-theme="dark"] .receipt-box {
+[data-bs-theme="dark"] .receipt-box,
+[data-theme="dark"] .receipt-box {
   border-color: #475569;
 }
 
-/* Règles d'Impression (@media print) */
 @media print {
   body {
     background-color: #ffffff !important;
@@ -342,13 +799,15 @@ body {
   }
   .sidebar,
   .mobile-offcanvas-sidebar,
+  .mobile-bottom-bar,
   .top-navbar,
   .btn,
   .no-print,
   .card-footer,
   .alert,
   .theme-toggle-btn,
-  .lang-selector-btn {
+  .lang-selector-btn,
+  .skip-link {
     display: none !important;
   }
   .app-wrapper {

@@ -1,7 +1,7 @@
-# Application Web de Gestion du Parking Public de la Ville de Bujumbura
+# Application Web de Gestion du Parking Public de la Mairie de Bujumbura
 
-Projet académique réalisé pour la **Faculté de Génie Logiciel** de l'**Université Internationale de Bujumbura (Bujumbura International University - BIU)**  
-**Niveau :** BAC 2 &bull; **Cours :** Programmation en Python / Framework Django  
+Système officiel de gestion et d'encaissement du stationnement public urbain.  
+**Institution :** Mairie de Bujumbura &bull; Régie des Parkings Publics Municipaux  
 **Localisation :** Ville de Bujumbura, République du Burundi  
 **Monnaie Officielle :** Franc Burundi (**BIF**)  
 
@@ -9,7 +9,7 @@ Projet académique réalisé pour la **Faculté de Génie Logiciel** de l'**Univ
 
 ## 📌 Présentation & Objectifs du Projet
 
-Cette application web a été développée en réponse aux exigences académiques et aux besoins réels de la Mairie de Bujumbura pour moderniser et informatiser la gestion du stationnement public urbain.
+Cette application web a été développée pour la Mairie de Bujumbura afin de moderniser et informatiser la gestion du stationnement public urbain.
 
 Elle permet la supervision en temps réel des places de stationnement, le calcul automatisé des droits de stationnement en **Francs Burundi (BIF)** selon des grilles tarifaires configurables, une traçabilité totale des opérations grâce à un système d'**Audit Trail**, ainsi que la génération de rapports officiels imprimables et exportables en **PDF**.
 

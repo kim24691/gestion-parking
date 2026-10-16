@@ -1,5 +1,5 @@
 # Translation of Bujumbura Parking into French (fr).
-# Copyright (C) 2026 Bujumbura International University (BIU)
+# Copyright (C) 2026 Mairie de Bujumbura
 #
 msgid ""
 msgstr ""
@@ -7,7 +7,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-10-06 12:45+0200\n"
 "PO-Revision-Date: 2026-10-06 12:45+0200\n"
-"Last-Translator: BIU Software Engineering <info@biu.bi>\n"
+"Last-Translator: Régie des Parkings Publics <contact@mairiebujumbura.gov.bi>\n"
 "Language-Team: French <fr@li.org>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"

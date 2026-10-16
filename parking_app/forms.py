@@ -141,6 +141,7 @@ class TicketEntryForm(BootstrapFormMixin, forms.ModelForm):
     """
     Enregistrement de l'entrée d'un véhicule dans le parking municipal.
     Effectue la vérification en temps réel de la disponibilité de place dans la zone.
+    Pour un agent de terrain, restreint automatiquement la zone à sa zone d'affectation.
     """
     class Meta:
         model = ParkingTicket
@@ -152,6 +153,16 @@ class TicketEntryForm(BootstrapFormMixin, forms.ModelForm):
                 'autofocus': True
             }),
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user and not user.is_admin_user():
+            if user.assigned_zone:
+                self.fields['zone'].queryset = ParkingZone.objects.filter(pk=user.assigned_zone.pk)
+                self.fields['zone'].initial = user.assigned_zone
+                self.fields['zone'].empty_label = None
+            else:
+                self.fields['zone'].queryset = ParkingZone.objects.none()
 
     def clean_plate_number(self):
         plate = self.cleaned_data.get('plate_number', '').strip().upper()
@@ -185,7 +196,10 @@ class TicketEntryForm(BootstrapFormMixin, forms.ModelForm):
 
 
 class TicketCheckoutForm(BootstrapFormMixin, forms.Form):
-    """Validation de sortie et encaissement en BIF"""
+    """
+    Validation de sortie et encaissement en BIF.
+    Intègre la gestion des infractions avec amende forfaitaire de 50 000 BIF.
+    """
     payment_method = forms.ChoiceField(
         choices=ParkingTicket.PAYMENT_METHOD_CHOICES,
         label="Mode de paiement",
@@ -203,6 +217,40 @@ class TicketCheckoutForm(BootstrapFormMixin, forms.Form):
         widget=forms.NumberInput(attrs={'class': 'form-control form-control-lg fw-bold text-success'})
     )
 
+    # --- Section Infraction / Amende ---
+    has_infraction = forms.BooleanField(
+        required=False,
+        label="Constater une infraction (+50 000 BIF d'amende forfaitaire)",
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input',
+            'id': 'id_has_infraction',
+            'role': 'switch',
+        })
+    )
+    infraction_type = forms.ChoiceField(
+        choices=[('AUCUNE', '--- Sélectionner le type ---')] + ParkingTicket.INFRACTION_TYPE_CHOICES[1:],
+        required=False,
+        label="Type d'infraction",
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_infraction_type'})
+    )
+    infraction_reason = forms.CharField(
+        required=False,
+        label="Motif / Observations (Optionnel)",
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Ex: Ticket égaré par le conducteur, dépassement confirmé...',
+            'class': 'form-control',
+            'id': 'id_infraction_reason'
+        })
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        has_infraction = cleaned_data.get('has_infraction')
+        infraction_type = cleaned_data.get('infraction_type')
+        if has_infraction and (not infraction_type or infraction_type == 'AUCUNE'):
+            self.add_error('infraction_type', "Veuillez sélectionner le type d'infraction constatée.")
+        return cleaned_data
+
 
 class TicketDeactivateForm(BootstrapFormMixin, forms.Form):
     """Désactivation logique ou annulation d'un ticket avec justification obligatoire"""
@@ -214,7 +262,7 @@ class TicketDeactivateForm(BootstrapFormMixin, forms.Form):
 
 
 class TicketFilterForm(forms.Form):
-    """Filtres pour la recherche avancée des tickets"""
+    """Filtres pour la recherche avancée des tickets avec restriction de zone pour agents"""
     q = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Immatriculation ou N° Ticket...'}),
@@ -227,6 +275,16 @@ class TicketFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'}),
         label="Zone"
     )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user and not user.is_admin_user():
+            if user.assigned_zone:
+                self.fields['zone'].queryset = ParkingZone.objects.filter(pk=user.assigned_zone.pk)
+                self.fields['zone'].initial = user.assigned_zone
+                self.fields['zone'].empty_label = None
+            else:
+                self.fields['zone'].queryset = ParkingZone.objects.none()
     vehicle_type = forms.ModelChoiceField(
         queryset=VehicleType.objects.all(),
         required=False,

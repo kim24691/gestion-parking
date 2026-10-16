@@ -1,18 +1,23 @@
 {% load i18n static %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE|default:'fr' }}" data-bs-theme="light">
+<html lang="{{ LANGUAGE_CODE|default:'fr' }}" data-bs-theme="light" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% trans "Tableau de bord" %}{% endblock %} - Bujumbura Parking</title>
-    
-    <!-- Script de pré-chargement du thème pour éviter le scintillement (Anti-Flicker / FOUT) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}{% trans "Tableau de bord" %}{% endblock %} - {% trans "Mairie de Bujumbura" %}</title>
+
+    <!-- Script de Pré-chargement Immédiat du Thème (Zéro Scintillement / Anti-FOUC) -->
     <script>
         (function() {
-            const saved = localStorage.getItem('bjm_parking_theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = saved ? saved : (prefersDark ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-bs-theme', theme);
+            try {
+                const saved = localStorage.getItem('bjm_parking_theme');
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = saved ? saved : (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-bs-theme', theme);
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                console.warn('Impossible de charger le thème local :', e);
+            }
         })();
     </script>
 
@@ -20,14 +25,17 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome 6.5 Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <!-- Style Personnalisé -->
+    <!-- Style Personnalisé Ergonomique & Responsive -->
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body data-bs-theme="light" data-theme="light">
+    <!-- Lien d'évitement pour l'accessibilité au clavier (a11y) -->
+    <a href="#mainContent" class="skip-link">{% trans "Passer au contenu principal" %}</a>
+
     <div class="app-wrapper">
         <!-- 1. BARRE LATÉRALE BUREAU (Desktop Sidebar >= 992px) -->
-        <aside class="sidebar d-none d-lg-block">
+        <aside class="sidebar d-none d-lg-block" aria-label="{% trans 'Menu Principal Bureau' %}">
             <div class="brand-box">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-3 bg-primary p-2 text-white shadow-sm">
@@ -35,24 +43,24 @@
                     </div>
                     <div>
                         <div class="fw-bold text-white fs-6 lh-sm">PARKING BUJUMBURA</div>
-                        <div class="small text-info opacity-75">Mairie &bull; BIU Génie Logiciel</div>
+                        <div class="small text-info opacity-75">{% trans "Mairie de Bujumbura" %} &bull; {% trans "Régie Municipale" %}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Profil connecté dans la barre latérale Desktop -->
+            <!-- Profil Agent / Utilisateur connecté -->
             {% if request.user.is_authenticated %}
             <div class="px-3 py-3 border-bottom border-secondary border-opacity-25 bg-black bg-opacity-25">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="rounded-circle bg-light text-dark fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                    <div class="rounded-circle bg-light text-dark fw-bold d-flex align-items-center justify-content-center shadow-sm" style="width: 38px; height: 38px;">
                         {{ request.user.username|slice:":2"|upper }}
                     </div>
                     <div class="overflow-hidden">
                         <div class="text-white text-truncate fw-semibold small">
                             {{ request.user.get_full_name|default:request.user.username }}
                         </div>
-                        <span class="badge {{ request.user.get_role_badge_class }} py-0 px-2" style="font-size: 0.7rem;">
-                            {{ request.user.get_role_display }}
+                        <span class="badge {{ request.user.get_role_badge_class|default:'bg-primary' }} py-0 px-2" style="font-size: 0.7rem;">
+                            {{ request.user.get_role_display|default:request.user.role }}
                         </span>
                     </div>
                 </div>
@@ -64,7 +72,7 @@
             </div>
             {% endif %}
 
-            <!-- Menu de Navigation Desktop -->
+            <!-- Navigation Desktop -->
             <nav class="sidebar-nav">
                 <div class="nav-header">{% trans "Général" %}</div>
                 <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
@@ -73,7 +81,7 @@
                 </a>
 
                 <div class="nav-header">{% trans "Stationnement" %}</div>
-                <a href="{% url 'ticket_entry' %}" class="nav-link text-warning fw-semibold {% if request.resolver_match.url_name == 'ticket_entry' %}active{% endif %}">
+                <a href="{% url 'ticket_entry' %}" class="nav-link text-warning fw-bold {% if request.resolver_match.url_name == 'ticket_entry' %}active{% endif %}">
                     <i class="fa-solid fa-circle-plus text-warning"></i>
                     <span>{% trans "Nouvelle Entrée" %}</span>
                 </a>
@@ -108,7 +116,7 @@
                     <i class="fa-solid fa-users-gear"></i>
                     <span>{% trans "Gestion Utilisateurs" %}</span>
                 </a>
-                <a href="{% url 'admin:index' %}" class="nav-link" target="_blank">
+                <a href="{% url 'admin:index' %}" class="nav-link" target="_blank" rel="noopener">
                     <i class="fa-solid fa-screwdriver-wrench"></i>
                     <span>Django Admin</span>
                 </a>
@@ -133,10 +141,10 @@
                     <i class="fa-solid fa-square-parking fa-2x text-primary"></i>
                     <div>
                         <h6 class="offcanvas-title fw-bold text-white mb-0" id="mobileSidebarLabel">PARKING BUJUMBURA</h6>
-                        <div class="small text-info opacity-75" style="font-size: 0.72rem;">Mairie &bull; BIU (BAC 2)</div>
+                        <div class="small text-info opacity-75" style="font-size: 0.72rem;">{% trans "Mairie de Bujumbura" %} &bull; {% trans "Régie Municipale" %}</div>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="{% trans 'Fermer' %}"></button>
             </div>
             <div class="offcanvas-body p-0">
                 {% if request.user.is_authenticated %}
@@ -147,8 +155,8 @@
                         </div>
                         <div>
                             <div class="text-white fw-semibold small">{{ request.user.get_full_name|default:request.user.username }}</div>
-                            <span class="badge {{ request.user.get_role_badge_class }} py-0 px-2" style="font-size: 0.68rem;">
-                                {{ request.user.get_role_display }}
+                            <span class="badge {{ request.user.get_role_badge_class|default:'bg-primary' }} py-0 px-2" style="font-size: 0.68rem;">
+                                {{ request.user.get_role_display|default:request.user.role }}
                             </span>
                         </div>
                     </div>
@@ -163,7 +171,7 @@
                     </a>
 
                     <div class="nav-header">{% trans "Stationnement" %}</div>
-                    <a href="{% url 'ticket_entry' %}" class="nav-link text-warning fw-semibold {% if request.resolver_match.url_name == 'ticket_entry' %}active{% endif %}">
+                    <a href="{% url 'ticket_entry' %}" class="nav-link text-warning fw-bold {% if request.resolver_match.url_name == 'ticket_entry' %}active{% endif %}">
                         <i class="fa-solid fa-circle-plus text-warning"></i>
                         <span>{% trans "Nouvelle Entrée" %}</span>
                     </a>
@@ -215,7 +223,7 @@
 
         <!-- 3. ZONE PRINCIPALE DE CONTENU -->
         <div class="main-content">
-            <!-- Barre de navigation supérieure (Topbar Responsive) -->
+            <!-- Barre supérieure (Topbar) -->
             <header class="top-navbar d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
                     <!-- Bouton Hamburger Mobile & Tablette -->
@@ -224,12 +232,12 @@
                     </button>
 
                     <!-- Titre Institutionnel -->
-                    <span class="badge bg-light text-dark border px-2 px-md-3 py-2 fs-6">
+                    <span class="badge bg-light text-dark border px-2 px-md-3 py-2 fs-6 shadow-sm">
                         <i class="fa-solid fa-city text-primary me-1 me-md-2"></i>
                         <strong>Bujumbura</strong><span class="d-none d-sm-inline">, Burundi</span>
                     </span>
 
-                    <!-- Places libres / occupées en direct (masqué sur très petit smartphone pour économiser l'espace) -->
+                    <!-- Disponibilité des places en direct (Masqué sur petit smartphone) -->
                     <div class="d-none d-md-flex align-items-center gap-2">
                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
                             <i class="fa-solid fa-circle-check me-1"></i> {% trans "Places Libres" %} : <strong>{{ global_available_spots|default:"0" }}</strong>
@@ -240,13 +248,18 @@
                     </div>
                 </div>
 
-                <!-- Contrôles à droite : Thème Sombre/Clair, Sélecteur de Langue, Entrée Rapide, Profil -->
+                <!-- Contrôles à droite : Langue, Mode Sombre/Clair, CTA Rapide, Profil -->
                 <div class="d-flex align-items-center gap-2">
                     <!-- A. Sélecteur de Langue (i18n Dropdown avec Formulaire Django) -->
                     <div class="dropdown">
                         <button class="lang-selector-btn dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="{% trans 'Changer de langue' %}">
-                            <i class="fa-solid fa-globe text-primary"></i>
-                            <span class="text-uppercase fw-bold">{{ LANGUAGE_CODE|slice:":2" }}</span>
+                            {% if LANGUAGE_CODE == 'rn' %}
+                                <span>🇧🇮</span> <span class="fw-bold">RN</span>
+                            {% elif LANGUAGE_CODE == 'en' %}
+                                <span>🇬🇧</span> <span class="fw-bold">EN</span>
+                            {% else %}
+                                <span>🇫🇷</span> <span class="fw-bold">FR</span>
+                            {% endif %}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="languageDropdown">
                             <li><h6 class="dropdown-header">{% trans "Choisir la langue" %}</h6></li>
@@ -255,8 +268,9 @@
                                 <input name="next" type="hidden" value="{{ request.get_full_path }}">
                                 <input name="language" type="hidden" value="fr">
                                 <li>
-                                    <button type="submit" class="dropdown-item d-flex align-items-center gap-2 {% if LANGUAGE_CODE == 'fr' %}active fw-bold{% endif %}">
-                                        <span>🇫🇷</span> <span>Français</span>
+                                    <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between gap-2 {% if LANGUAGE_CODE == 'fr' %}active fw-bold{% endif %}">
+                                        <span>🇫🇷 Français</span>
+                                        {% if LANGUAGE_CODE == 'fr' %}<i class="fa-solid fa-check small"></i>{% endif %}
                                     </button>
                                 </li>
                             </form>
@@ -265,8 +279,9 @@
                                 <input name="next" type="hidden" value="{{ request.get_full_path }}">
                                 <input name="language" type="hidden" value="rn">
                                 <li>
-                                    <button type="submit" class="dropdown-item d-flex align-items-center gap-2 {% if LANGUAGE_CODE == 'rn' %}active fw-bold{% endif %}">
-                                        <span>🇧🇮</span> <span>Kirundi</span>
+                                    <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between gap-2 {% if LANGUAGE_CODE == 'rn' %}active fw-bold{% endif %}">
+                                        <span>🇧🇮 Kirundi</span>
+                                        {% if LANGUAGE_CODE == 'rn' %}<i class="fa-solid fa-check small"></i>{% endif %}
                                     </button>
                                 </li>
                             </form>
@@ -275,21 +290,22 @@
                                 <input name="next" type="hidden" value="{{ request.get_full_path }}">
                                 <input name="language" type="hidden" value="en">
                                 <li>
-                                    <button type="submit" class="dropdown-item d-flex align-items-center gap-2 {% if LANGUAGE_CODE == 'en' %}active fw-bold{% endif %}">
-                                        <span>🇬🇧</span> <span>English</span>
+                                    <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between gap-2 {% if LANGUAGE_CODE == 'en' %}active fw-bold{% endif %}">
+                                        <span>🇬🇧 English</span>
+                                        {% if LANGUAGE_CODE == 'en' %}<i class="fa-solid fa-check small"></i>{% endif %}
                                     </button>
                                 </li>
                             </form>
                         </ul>
                     </div>
 
-                    <!-- B. Bouton Toggle Mode Sombre / Mode Clair (Dark / Light) -->
-                    <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="{% trans 'Mode Sombre' %}" title="{% trans 'Mode Sombre' %}">
-                        <i id="themeToggleIcon" class="fa-solid fa-moon"></i>
+                    <!-- B. Bouton Toggle Thème Sombre / Clair (Dark / Light) -->
+                    <button class="theme-toggle-btn" type="button" aria-label="{% trans 'Mode Sombre' %}" title="{% trans 'Mode Sombre' %}">
+                        <i class="theme-icon fa-solid fa-moon"></i>
                     </button>
 
-                    <!-- C. Bouton Enregistrer Entrée Rapide -->
-                    <a href="{% url 'ticket_entry' %}" class="btn btn-primary btn-sm shadow-sm d-none d-sm-inline-flex">
+                    <!-- C. Bouton Enregistrer Entrée Rapide (Grand écran) -->
+                    <a href="{% url 'ticket_entry' %}" class="btn btn-cta-entry btn-sm shadow-sm d-none d-sm-inline-flex">
                         <i class="fa-solid fa-circle-plus"></i>
                         <span class="d-none d-md-inline">{% trans "Nouvelle Entrée" %}</span>
                     </a>
@@ -311,7 +327,7 @@
             </header>
 
             <!-- Corps de la Page -->
-            <main class="content-body">
+            <main class="content-body" id="mainContent">
                 <!-- Notifications Flash -->
                 {% if messages %}
                 <div class="messages-container mb-4">
@@ -327,7 +343,7 @@
                             <i class="fa-solid fa-circle-info text-info me-2 fs-5"></i>
                         {% endif %}
                         <span>{{ message }}</span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% trans 'Fermer' %}"></button>
                     </div>
                     {% endfor %}
                 </div>
@@ -336,24 +352,53 @@
                 {% block content %}{% endblock %}
             </main>
 
-            <!-- Pied de page académique -->
+            <!-- Pied de page officiel & académique -->
             <footer class="bg-white border-top py-3 px-4 text-center text-muted small mt-auto no-print">
                 <div class="container-fluid d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
                     <div>
-                        <strong>{{ CITY_NAME }}</strong> &copy; {{ CURRENT_YEAR }} &bull; {% trans "Régie des Parkings Publics Municipaux" %}
+                        <strong>{{ CITY_NAME|default:"Mairie de Bujumbura" }}</strong> &copy; {{ CURRENT_YEAR|default:"2026" }} &bull; {% trans "Régie des Parkings Publics Municipaux" %}
                     </div>
-                    <div class="text-primary fw-semibold">
-                        <i class="fa-solid fa-graduation-cap me-1"></i> {{ ACADEMIC_INSTITUTION }}
+                    <div class="text-secondary">
+                        <i class="fa-solid fa-shield-halved me-1 text-primary"></i> {% trans "Système Municipal Sécurisé d'Encaissement" %}
                     </div>
                 </div>
             </footer>
         </div>
     </div>
 
+    <!-- 4. BARRE D'ACTIONS RAPIDES BASSE (Mobile Field Agent Bottom Bar < 992px) -->
+    <nav class="mobile-bottom-bar d-lg-none no-print" aria-label="{% trans 'Barre tactile agent' %}">
+        <a href="{% url 'dashboard' %}" class="bar-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-gauge-high"></i>
+            <span>{% trans "Accueil" %}</span>
+        </a>
+        <a href="{% url 'ticket_list' %}" class="bar-item {% if 'ticket' in request.resolver_match.url_name and request.resolver_match.url_name != 'ticket_entry' %}active{% endif %}">
+            <i class="fa-solid fa-ticket"></i>
+            <span>{% trans "Tickets" %}</span>
+        </a>
+
+        <!-- Bouton FAB Central : Nouvelle Entrée au bout du pouce -->
+        <a href="{% url 'ticket_entry' %}" class="bar-fab-entry" aria-label="{% trans 'Nouvelle Entrée' %}" title="{% trans 'Nouvelle Entrée' %}">
+            <i class="fa-solid fa-plus"></i>
+        </a>
+
+        <button type="button" class="bar-item theme-toggle-btn" aria-label="{% trans 'Basculer Thème' %}">
+            <i class="theme-icon fa-solid fa-moon"></i>
+            <span>{% trans "Thème" %}</span>
+        </button>
+
+        <button type="button" class="bar-item" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar" aria-controls="mobileSidebar" aria-label="{% trans 'Menu' %}">
+            <i class="fa-solid fa-bars"></i>
+            <span>{% trans "Menu" %}</span>
+        </button>
+    </nav>
+
     <!-- Bootstrap 5.3 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Script de gestion du Thème Sombre / Clair -->
     <script src="{% static 'js/theme.js' %}"></script>
+    <!-- Script Ergonomie Terrain & Validation Temps Réel -->
+    <script src="{% static 'js/agent-ux.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
